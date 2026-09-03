@@ -236,6 +236,10 @@ const RSVPForm: React.FC = () => {
               <p className="font-sans text-gray-600 text-sm leading-relaxed">
                 Para confirmar tu asistencia, usa el enlace personalizado que recibiste en tu invitación.
                 Si no lo tienes, contacta a los novios.
+                Tu presencia hará aún más especial este día. Nos encantará contar contigo para celebrar nuestro amor. Por favor, confirma tu asistencia antes del 31 de Octubre  
+              </p>
+              <p className="font-sans text-gray-600 text-sm leading-relaxed">
+                Hemos elegido con mucho amor a quienes queremos a nuestro lado en este día tan especial, por lo cual esta invitación es personal e intransferible. 
               </p>
             </div>
           </motion.div>

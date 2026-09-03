@@ -11,11 +11,11 @@ import momento4 from '@/assets/gallery/momento-4.webp';
 import momento5 from '@/assets/gallery/momento-5.webp';
 import momento6 from '@/assets/gallery/momento-6.webp';
 
-export const WEDDING_DATE = "2026-07-30T16:00:00";
+export const WEDDING_DATE = "2026-12-18T16:00:00";
 
 export const COUPLE_NAMES = {
-  bride: "Sofia",
-  groom: "Alejandro"
+  bride: "Drix",
+  groom: "Llely"
 };
 
 export const STORY_DATA: StoryEvent[] = [
@@ -45,15 +45,15 @@ export const STORY_DATA: StoryEvent[] = [
 export const EVENTS: { ceremony: EventDetail; reception: EventDetail } = {
   ceremony: {
     title: "Ceremonia Religiosa",
-    date: "30 de Julio, 2026",
+    date: "18 de diciembre, 2026",
     time: "16:00 HRS",
-    locationName: "Catedral de Santa María",
-    address: "Av. Principal 123, Centro Histórico",
-    mapLink: "https://maps.google.com"
+    locationName: "Salón Julis ",
+    address: "Eje 6 Sur Trabajadoras Sociales 1000, San Pedro, Iztapalapa, 09000 Ciudad de México, CDMX ",
+    mapLink: "https://maps.app.goo.gl/ujvSA4Wb5tUdF3Ph7 "
   },
   reception: {
     title: "Recepción & Fiesta",
-    date: "30 de Julio, 2026",
+    date: "18 de Diciembre, 2026",
     time: "18:30 HRS",
     locationName: "Hacienda Los Olivos",
     address: "Km 45 Carretera Norte, Valle Sagrado",

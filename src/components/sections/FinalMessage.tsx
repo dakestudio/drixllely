@@ -37,7 +37,7 @@ const FinalMessage: React.FC = () => {
             viewport={{ once: true }}
             className="block mb-2 md:mb-4"
           >
-            "El amor no hace girar al mundo.
+            "Dicen que cuando encuentras a la persona correcta, el corazón lo sabe. 
           </motion.span>
           <motion.span
             initial={{ opacity: 0, y: 15 }}
@@ -46,7 +46,7 @@ const FinalMessage: React.FC = () => {
             viewport={{ once: true }}
             className="block"
           >
-            El amor es lo que hace que el viaje valga la pena."
+            Nosotros lo supimos y hoy queremos celebrar nuestro amor rodeados de las personas más importantes en nuestras vidas."
           </motion.span>
         </div>
 
