@@ -3,6 +3,9 @@ import { motion, useScroll, useTransform } from 'framer-motion';
 import { COUPLE_NAMES } from '@/constants';
 import { DividerOrnament } from '@/components/ui/WeddingOrnaments';
 
+// Importamos la imagen directamente desde la carpeta assets
+import fotoFinalImg from '@/assets/gallery/fotofinal.jpg';
+
 const FinalMessage: React.FC = () => {
   const sectionRef = useRef<HTMLElement>(null);
 
@@ -18,8 +21,8 @@ const FinalMessage: React.FC = () => {
       {/* Background Image with Parallax */}
       <motion.div className="absolute inset-0 z-0" style={{ y: bgY }}>
         <img 
-          src="https://images.unsplash.com/photo-1530023367847-a683933f4172?q=80&w=1920&auto=format&fit=crop" 
-          alt="Wedding Celebration Sparklers" 
+          src={fotoFinalImg} 
+          alt="Fotografía final de los novios" 
           className="w-full h-[120%] object-cover opacity-70 grayscale-[10%]" 
           loading="lazy"
         />

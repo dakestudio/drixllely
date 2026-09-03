@@ -97,7 +97,7 @@ const WelcomeScreen: React.FC = () => {
                   transition={{ delay: 1.6, duration: 1, ease: [0.33, 1, 0.68, 1] }}
                   className="font-serif italic text-xl md:text-2xl text-wedding-charcoal/80 tracking-wide"
                 >
-                  30 de Julio, 2026
+                  18 de Diciembre, 2026
                 </motion.p>
               </div>
 

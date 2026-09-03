@@ -2,6 +2,7 @@ import React from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { COUPLE_NAMES, WEDDING_DATE } from '@/constants';
 import { ArrowDown } from 'lucide-react';
+import fotoFondo from '@/assets/gallery/herofotodrixllely.jpg';
 
 const HeroSection: React.FC = () => {
   const date = new Date(WEDDING_DATE);
@@ -17,7 +18,7 @@ const HeroSection: React.FC = () => {
       {/* Background Image with Parallax */}
       <motion.div className="absolute inset-0 z-0" style={{ y: bgY }}>
         <img 
-          src="https://images.unsplash.com/photo-1583939003579-730e3918a45a?q=80&w=1920&auto=format&fit=crop" 
+          src={fotoFondo} 
           alt="Wedding Background" 
           className="w-full h-[120%] object-cover opacity-80"
           loading="eager"

@@ -35,17 +35,11 @@ const GiftSection: React.FC = () => {
           </p>
 
           <div className="flex flex-col md:flex-row justify-center gap-6">
-            <motion.a
-              href="#"
-              whileHover={{ y: -5, boxShadow: '0 20px 40px rgba(0,0,0,0.1)' }}
-              className="flex flex-col items-center justify-center p-8 bg-white border border-wedding-sand hover:border-wedding-gold transition-all duration-300 group w-full md:w-64"
-            >
-              <span className="font-display text-xl mb-2 text-wedding-charcoal">Amazon Registry</span>
-              <span className="text-xs font-sans text-gray-400 uppercase tracking-widest group-hover:text-wedding-olive transition-colors">Ver Lista</span>
-            </motion.a>
             
             <motion.a
-              href="#"
+              href="https://mesaderegalos.liverpool.com.mx/milistaderegalos/52023058?category=154"
+              target="_blank"
+              rel="noopener noreferrer"
               whileHover={{ y: -5, boxShadow: '0 20px 40px rgba(0,0,0,0.1)' }}
               className="flex flex-col items-center justify-center p-8 bg-white border border-wedding-sand hover:border-wedding-gold transition-all duration-300 group w-full md:w-64"
             >
@@ -54,30 +48,7 @@ const GiftSection: React.FC = () => {
             </motion.a>
           </div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-            viewport={{ once: true }}
-            className="mt-12 bg-white p-8 border border-wedding-sand inline-block max-w-md w-full relative"
-          >
-            <CreditCard className="w-8 h-8 text-wedding-olive mx-auto mb-4" strokeWidth={1}/>
-            <h3 className="font-serif italic text-lg mb-4 text-wedding-olive">Sobre o Transferencia</h3>
-            <p className="text-sm font-sans text-gray-500 mb-2">Banco Santander</p>
-            <div className="flex items-center justify-center gap-2 mb-1">
-              <p className="text-sm font-sans text-gray-800 font-bold">{clabe}</p>
-              <motion.button
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-                onClick={handleCopy}
-                className="p-1.5 rounded-sm hover:bg-wedding-beige transition-colors"
-                title="Copiar CLABE"
-              >
-                <Copy className="w-4 h-4 text-wedding-olive" />
-              </motion.button>
-            </div>
-            <p className="text-xs font-sans text-gray-400">A nombre de Sofia &amp; Alejandro</p>
-          </motion.div>
+          
         </motion.div>
       </div>
 
