@@ -65,7 +65,7 @@ const EventDetails: React.FC = () => {
         </motion.div>
 
         <div className="flex flex-col md:flex-row justify-center items-stretch flex-wrap">
-          <EventCard detail={EVENTS.ceremony} type="Ceremony" />
+          
           <EventCard detail={EVENTS.reception} type="Reception" />
         </div>
 
@@ -74,16 +74,7 @@ const EventDetails: React.FC = () => {
             whileInView={{ opacity: 1, y: 0 }}
             className="mt-16 text-center max-w-2xl mx-auto"
         >
-            <div className="p-8 border border-wedding-gold/20 bg-white shadow-sm">
-                <h4 className="font-display text-xl mb-4 text-wedding-olive">Código de Vestimenta</h4>
-                <p className="font-sans text-gray-600 mb-6">Formal / Etiqueta Rigurosa</p>
-                
-                <h4 className="font-display text-xl mb-4 text-wedding-olive">Nota Importante</h4>
-                <p className="font-sans text-gray-600 text-sm">
-                    Amamos a sus pequeños, pero nuestra boda será un evento "sólo adultos". 
-                    Agradecemos su comprensión y esperamos que puedan disfrutar de la noche con nosotros.
-                </p>
-            </div>
+            
         </motion.div>
       </div>
     </section>
