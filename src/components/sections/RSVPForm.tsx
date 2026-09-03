@@ -2,7 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { RSVPData, Invitado } from '@/types';
 import { getInvitado, updateRSVP } from '@/lib/firebase';
-import { Check, Loader2, AlertCircle, UserX } from 'lucide-react';
+import { Check, Loader2, AlertCircle, UserX, HeartHandshake, Sparkles } from 'lucide-react';
+
+// --- PALETA OFICIAL DE LA BODA ---
+// Dark Lila: #2B1A2A
+// Gris Perla: #A8ABAE
+// Verde Olivo: #536332
+// Blanco: #FCFBF5
 
 type FormStatus = 'loading' | 'idle' | 'submitting' | 'success' | 'error' | 'invalid-code' | 'already-confirmed';
 
@@ -21,7 +27,7 @@ const RSVPForm: React.FC = () => {
     mensaje: '',
   });
 
-  // ─── Read invite code from URL ──────────────────────────
+  // Read invite code from URL
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const code = params.get('invite');
@@ -39,8 +45,7 @@ const RSVPForm: React.FC = () => {
         setStatus('invalid-code');
         return;
       }
-      // Si ya confirmó y no tiene espacio extra (o si declinó asitir), bloqueamos el formulario.
-      // Pero si confirmó asistir y le aumentaron los pases (maxInvitados > numInvitados), le permitimos editar.
+
       if (data.confirmado && (data.asistira === 'no' || (data.numInvitados || 0) >= data.maxInvitados)) {
         setInvitado(data);
         setStatus('already-confirmed');
@@ -48,7 +53,6 @@ const RSVPForm: React.FC = () => {
       }
 
       setInvitado(data);
-      // Pre-poblar el formulario con sus datos existentes si es que va a re-confirmar acompañantes extra
       setFormData({
         telefono: data.telefono || '',
         asistira: data.asistira || null,
@@ -64,7 +68,7 @@ const RSVPForm: React.FC = () => {
     fetchInvitado();
   }, []);
 
-  // ─── Update companion name fields when numInvitados changes ──
+  // Update companion name fields when numInvitados changes
   useEffect(() => {
     const numCompanions = Math.max(0, formData.numInvitados - 1);
     setFormData(prev => {
@@ -138,80 +142,84 @@ const RSVPForm: React.FC = () => {
     }
   };
 
-  // ─── Loading State ─────────────────────────────────────
+  // Loading State
   if (status === 'loading') {
     return (
-      <section id="rsvp-section" className="py-24 bg-white text-center">
-        <Loader2 className="w-8 h-8 animate-spin text-wedding-olive mx-auto" />
-        <p className="mt-4 font-sans text-sm text-gray-500">Cargando tu invitación...</p>
+      <section id="rsvp-section" className="py-32 bg-[#FCFBF5] text-center">
+        <Loader2 className="w-10 h-10 animate-spin text-[#536332] mx-auto" />
+        <p className="mt-4 font-sans text-xs tracking-widest uppercase text-[#A8ABAE]">Cargando tu invitación...</p>
       </section>
     );
   }
 
-  // ─── Invalid Code ──────────────────────────────────────
+  // Invalid Code
   if (status === 'invalid-code') {
     return (
-      <section id="rsvp-section" className="py-24 bg-white text-center px-6">
+      <section id="rsvp-section" className="py-24 bg-[#FCFBF5] text-center px-6">
         <motion.div
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          className="max-w-md mx-auto"
+          className="max-w-md mx-auto bg-white p-10 rounded-sm shadow-md border border-[#A8ABAE]/20"
         >
-          <UserX className="w-16 h-16 mx-auto mb-6 text-gray-400" />
-          <h2 className="font-display text-2xl text-wedding-charcoal mb-4">Invitación no encontrada</h2>
-          <p className="font-sans text-gray-500 text-sm">
-            El código de invitación no es válido. Si crees que es un error, contacta a los novios.
+          <UserX className="w-12 h-12 mx-auto mb-4 text-[#A8ABAE]" />
+          <h2 className="font-serif italic text-2xl text-[#2B1A2A] mb-3">Invitación no encontrada</h2>
+          <p className="font-sans text-[#2B1A2A]/70 text-sm font-light leading-relaxed">
+            El código de invitación no es válido. Por favor, ponte en contacto con los novios.
           </p>
         </motion.div>
       </section>
     );
   }
 
-  // ─── Already Confirmed ─────────────────────────────────
+  // Already Confirmed
   if (status === 'already-confirmed' && invitado) {
     return (
-      <section className="py-24 bg-white text-center px-6">
+      <section className="py-24 bg-[#FCFBF5] text-center px-6">
         <motion.div
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          className="max-w-md mx-auto bg-wedding-beige p-12 border border-wedding-sand"
+          transition={{ duration: 0.8 }}
+          className="max-w-md mx-auto bg-white p-10 border border-[#536332]/30 shadow-xl rounded-sm"
         >
-          <Check className="w-16 h-16 mx-auto mb-6 text-wedding-olive" />
-          <h2 className="font-display text-2xl text-wedding-charcoal mb-4">¡Ya confirmaste, {invitado.nombre}!</h2>
-          <p className="font-sans text-gray-500 text-sm">
-            Tu respuesta fue: <strong>{invitado.asistira === 'yes' ? `Sí, ${invitado.numInvitados} persona(s)` : 'No podré asistir'}</strong>
+          <div className="w-14 h-14 bg-[#536332]/10 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Check className="w-8 h-8 text-[#536332]" />
+          </div>
+          <h2 className="font-serif italic text-3xl text-[#2B1A2A] mb-3">¡Ya confirmaste, {invitado.nombre}!</h2>
+          <p className="font-sans text-[#2B1A2A]/80 text-sm font-light">
+            Tu respuesta registrada: <strong className="font-medium text-[#536332]">{invitado.asistira === 'yes' ? `Sí, ${invitado.numInvitados} persona(s)` : 'No podré asistir'}</strong>
           </p>
         </motion.div>
       </section>
     );
   }
 
-  // ─── Success State ─────────────────────────────────────
+  // Success State
   if (status === 'success') {
     return (
-      <section id="rsvp-section" className="py-16 md:py-24 bg-white text-center px-6 min-h-[60vh] flex items-center justify-center">
+      <section id="rsvp-section" className="py-24 bg-[#FCFBF5] text-center px-6 min-h-[60vh] flex items-center justify-center">
         <motion.div
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ duration: 0.6, ease: 'easeOut' }}
-          className="max-w-lg mx-auto bg-wedding-beige p-12 border border-wedding-sand"
+          initial={{ scale: 0.85, opacity: 0, y: 30 }}
+          animate={{ scale: 1, opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+          className="max-w-lg mx-auto bg-white p-12 border border-[#536332]/30 shadow-2xl relative overflow-hidden rounded-sm"
         >
           <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
+            initial={{ scale: 0, rotate: -45 }}
+            animate={{ scale: 1, rotate: 0 }}
+            transition={{ delay: 0.2, type: 'spring', stiffness: 180 }}
+            className="w-20 h-20 bg-[#536332] rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg"
           >
-            <Check className="w-20 h-20 mx-auto mb-6 text-wedding-gold drop-shadow-lg" />
+            <Check className="w-10 h-10 text-[#FCFBF5]" strokeWidth={2} />
           </motion.div>
-          <h2 className="font-display text-3xl text-wedding-charcoal mb-4">¡Gracias por confirmar!</h2>
-          <p className="font-sans font-light text-gray-600 mb-2">
+          <h2 className="font-serif italic text-3xl md:text-4xl text-[#2B1A2A] mb-4">¡Respuesta Confirmada!</h2>
+          <p className="font-sans font-light text-[#2B1A2A]/80 mb-4 leading-relaxed text-sm md:text-base">
             {formData.asistira === 'yes'
-              ? `Hemos registrado ${formData.numInvitados} persona(s). ¡Nos emociona verte ahí!`
-              : 'Lamentamos que no puedas asistir. ¡Te tendremos presente!'}
+              ? `Hemos registrado ${formData.numInvitados} persona(s). ¡Nos llena de ilusión compartir este momento contigo!`
+              : 'Lamentamos mucho que no puedas acompañarnos. Te enviaremos todo nuestro cariño en este día.'}
           </p>
           {invitado && (
-            <p className="font-sans text-sm text-gray-400 mt-4">
-              Confirmado como: {invitado.nombre}
+            <p className="font-sans text-xs tracking-widest uppercase text-[#A8ABAE] mt-6 pt-6 border-t border-[#A8ABAE]/20">
+              Invitación registrada para: <span className="text-[#2B1A2A] font-medium">{invitado.nombre}</span>
             </p>
           )}
         </motion.div>
@@ -219,27 +227,28 @@ const RSVPForm: React.FC = () => {
     );
   }
 
-  // ─── No Invite Code (public view) ─────────────────────
+  // No Invite Code (Public View)
   if (!invitado) {
     return (
-      <section className="py-16 md:py-24 bg-white relative">
+      <section className="py-24 bg-[#FCFBF5] relative overflow-hidden">
         <div className="max-w-3xl mx-auto px-6 text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
+            transition={{ duration: 1 }}
             viewport={{ once: true }}
           >
-            <h2 className="font-display text-3xl sm:text-4xl md:text-5xl text-wedding-charcoal mb-4">RSVP</h2>
-            <p className="font-serif italic text-gray-500 mb-8">Confirma tu asistencia</p>
-            <div className="bg-wedding-beige p-8 md:p-12 border border-wedding-sand max-w-md mx-auto">
-              <p className="font-sans text-gray-600 text-sm leading-relaxed">
-                Para confirmar tu asistencia, usa el enlace personalizado que recibiste en tu invitación.
-                Si no lo tienes, contacta a los novios.
-                Tu presencia hará aún más especial este día. Nos encantará contar contigo para celebrar nuestro amor. Por favor, confirma tu asistencia antes del 31 de Octubre  
+            <Sparkles className="w-6 h-6 text-[#A8ABAE] mx-auto mb-3" />
+            <h2 className="font-serif italic text-4xl sm:text-5xl text-[#2B1A2A] mb-3">RSVP</h2>
+            <div className="w-12 h-[1px] bg-[#536332] mx-auto mb-8"></div>
+            
+            <div className="bg-white p-8 md:p-12 border border-[#A8ABAE]/30 shadow-lg max-w-lg mx-auto rounded-sm space-y-4">
+              <p className="font-sans text-[#2B1A2A]/80 text-sm leading-relaxed font-light">
+                Para confirmar tu asistencia, utiliza el enlace personal que recibiste en tu invitación.
               </p>
-              <p className="font-sans text-gray-600 text-sm leading-relaxed">
-                Hemos elegido con mucho amor a quienes queremos a nuestro lado en este día tan especial, por lo cual esta invitación es personal e intransferible. 
+              <p className="font-sans text-[#2B1A2A]/80 text-sm leading-relaxed font-light">
+                Por favor, confirma antes del <strong className="font-medium text-[#536332]">31 de Octubre</strong>. 
+                Esta invitación es personal e intransferible.
               </p>
             </div>
           </motion.div>
@@ -248,10 +257,12 @@ const RSVPForm: React.FC = () => {
     );
   }
 
-  // ─── Main Form ─────────────────────────────────────────
+  // Main Form
   return (
-    <section id="rsvp-section" className="py-16 md:py-24 bg-white relative">
+    <section id="rsvp-section" className="py-24 md:py-32 bg-[#FCFBF5] relative overflow-hidden">
       <div className="max-w-3xl mx-auto px-6 relative z-10">
+        
+        {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -259,14 +270,18 @@ const RSVPForm: React.FC = () => {
           viewport={{ once: true }}
           className="text-center mb-12"
         >
-          <h2 className="font-display text-3xl sm:text-4xl md:text-5xl text-wedding-charcoal mb-4">RSVP</h2>
-          <p className="font-serif italic text-gray-500">Hola <span className="text-wedding-olive font-semibold not-italic">{invitado.nombre}</span>, confirma tu asistencia</p>
+          <h2 className="font-serif italic text-4xl sm:text-5xl md:text-6xl text-[#2B1A2A] mb-3">Confirmación</h2>
+          <p className="font-sans text-xs uppercase tracking-[0.3em] text-[#A8ABAE]">
+            Hola <span className="text-[#536332] font-semibold">{invitado.nombre}</span>, será un honor contar contigo
+          </p>
         </motion.div>
 
-        <form onSubmit={handleSubmit} className="space-y-8 bg-wedding-beige p-8 md:p-12 shadow-inner border border-wedding-sand">
+        {/* Form Container */}
+        <form onSubmit={handleSubmit} className="space-y-10 bg-white p-8 md:p-14 shadow-[0_20px_50px_-20px_rgba(43,26,42,0.12)] border border-[#A8ABAE]/20 rounded-sm">
+          
           {/* Teléfono */}
           <div className="flex flex-col">
-            <label className="font-sans text-xs uppercase tracking-widest text-gray-500 mb-2">
+            <label className="font-sans text-xs uppercase tracking-[0.2em] text-[#A8ABAE] mb-3">
               Teléfono de contacto <span className="text-red-400">*</span>
             </label>
             <input
@@ -274,24 +289,24 @@ const RSVPForm: React.FC = () => {
               value={formData.telefono}
               onChange={(e) => setFormData(prev => ({ ...prev, telefono: e.target.value }))}
               maxLength={12}
-              className="bg-transparent border-b border-gray-400 py-2 focus:outline-none focus:border-wedding-olive transition-colors font-serif text-lg text-wedding-charcoal"
+              className="bg-transparent border-b border-[#A8ABAE]/50 py-3 focus:outline-none focus:border-[#536332] transition-all font-serif text-xl text-[#2B1A2A]"
               placeholder="Ej. 55 1234 5678"
             />
           </div>
 
-          {/* Asistencia */}
-          <div className="flex flex-col items-center justify-center py-4">
-            <label className="font-sans text-xs uppercase tracking-widest text-gray-500 mb-6">
-              ¿Asistirás? <span className="text-red-400">*</span>
+          {/* Asistencia Select Buttons */}
+          <div className="flex flex-col items-center justify-center py-2">
+            <label className="font-sans text-xs uppercase tracking-[0.2em] text-[#A8ABAE] mb-6">
+              ¿Nos acompañarás? <span className="text-red-400">*</span>
             </label>
             <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 w-full sm:w-auto">
               <button
                 type="button"
                 onClick={() => setFormData(prev => ({ ...prev, asistira: 'yes' }))}
-                className={`px-6 sm:px-8 py-3 border transition-all duration-300 text-sm sm:text-base tracking-wider uppercase ${
+                className={`px-8 py-3.5 border transition-all duration-500 text-xs tracking-[0.2em] uppercase rounded-full font-medium ${
                   formData.asistira === 'yes'
-                    ? 'bg-wedding-olive text-white border-wedding-olive'
-                    : 'border-gray-300 text-gray-500 hover:border-wedding-olive'
+                    ? 'bg-[#536332] text-[#FCFBF5] border-[#536332] shadow-md'
+                    : 'border-[#A8ABAE]/40 text-[#2B1A2A]/70 hover:border-[#536332]'
                 }`}
               >
                 Sí, asistiré
@@ -299,10 +314,10 @@ const RSVPForm: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setFormData(prev => ({ ...prev, asistira: 'no', numInvitados: 1, nombresAcompanantes: [] }))}
-                className={`px-6 sm:px-8 py-3 border transition-all duration-300 text-sm sm:text-base tracking-wider uppercase ${
+                className={`px-8 py-3.5 border transition-all duration-500 text-xs tracking-[0.2em] uppercase rounded-full font-medium ${
                   formData.asistira === 'no'
-                    ? 'bg-wedding-charcoal text-white border-wedding-charcoal'
-                    : 'border-gray-300 text-gray-500 hover:border-wedding-charcoal'
+                    ? 'bg-[#2B1A2A] text-[#FCFBF5] border-[#2B1A2A] shadow-md'
+                    : 'border-[#A8ABAE]/40 text-[#2B1A2A]/70 hover:border-[#2B1A2A]'
                 }`}
               >
                 No podré asistir
@@ -310,71 +325,67 @@ const RSVPForm: React.FC = () => {
             </div>
           </div>
 
-          {/* ─── Campos que solo aparecen si asiste ──────── */}
+          {/* Conditional Sections with Smooth Motion */}
           <AnimatePresence>
             {formData.asistira === 'yes' && (
               <motion.div
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: 'auto', opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.4, ease: 'easeOut' }}
-                className="overflow-hidden space-y-8"
+                transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                className="overflow-hidden space-y-8 pt-4 border-t border-[#A8ABAE]/20"
               >
                 {invitado.maxInvitados > 1 && (
-                  <div className="bg-white/60 border border-wedding-sand rounded px-4 py-3 text-center mb-6">
-                    <p className="font-sans text-sm text-wedding-charcoal">
+                  <div className="bg-[#FCFBF5] border border-[#536332]/30 rounded-sm px-4 py-3 text-center">
+                    <p className="font-sans text-xs uppercase tracking-widest text-[#536332]">
                       Tienes <strong>{invitado.maxInvitados - 1}</strong> {invitado.maxInvitados - 1 === 1 ? 'pase extra' : 'pases extras'} para acompañantes
                     </p>
                   </div>
                 )}
+
                 {invitado.maxInvitados > 1 && (
                   <div className="flex flex-col">
-                    <label className="font-sans text-xs uppercase tracking-widest text-gray-500 mb-2">
-                      ¿Cuántos acompañantes llevarás? <span className="text-red-400">*</span>
+                    <label className="font-sans text-xs uppercase tracking-[0.2em] text-[#A8ABAE] mb-3">
+                      ¿Cuántos acompañantes asistirán contigo? <span className="text-red-400">*</span>
                     </label>
-                    <div className="relative mt-2">
+                    <div className="relative mt-1">
                       <select
                         value={formData.numInvitados}
                         onChange={(e) => setFormData(prev => ({ ...prev, numInvitados: Number(e.target.value) }))}
                         className={`w-full appearance-none bg-transparent border-b-2 py-3 pr-8 focus:outline-none transition-colors font-serif text-lg cursor-pointer ${
                           formData.numInvitados === 0 
-                            ? 'border-gray-300 text-gray-400 focus:border-wedding-olive' 
-                            : 'border-wedding-olive text-wedding-charcoal'
+                            ? 'border-[#A8ABAE]/40 text-[#A8ABAE]' 
+                            : 'border-[#536332] text-[#2B1A2A]'
                         }`}
                       >
-                        <option value={0} disabled>Selecciona una opción...</option>
+                        <option value={0} disabled>Selecciona la cantidad...</option>
                         {Array.from({ length: invitado.maxInvitados }, (_, i) => (
-                          <option key={i} value={i + 1} className="text-wedding-charcoal">
-                            {i === 0 ? 'Iré solo' : i === 1 ? '1 acompañante' : `${i} acompañantes`}
+                          <option key={i} value={i + 1} className="text-[#2B1A2A]">
+                            {i === 0 ? 'Iré solo/a' : i === 1 ? '1 acompañante' : `${i} acompañantes`}
                           </option>
                         ))}
                       </select>
-                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-400">
-                        <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                          <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/>
-                        </svg>
-                      </div>
                     </div>
                   </div>
                 )}
 
-                {/* Nombres de acompañantes */}
+                {/* Companion Name Inputs */}
                 <AnimatePresence>
                   {formData.numInvitados > 1 && (
                     <motion.div
                       initial={{ height: 0, opacity: 0 }}
                       animate={{ height: 'auto', opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.3 }}
+                      transition={{ duration: 0.4 }}
                       className="overflow-hidden space-y-4"
                     >
-                      <label className="font-sans text-xs uppercase tracking-widest text-gray-500 block">
-                        Nombres de tus acompañantes <span className="text-red-400">*</span>
+                      <label className="font-sans text-xs uppercase tracking-[0.2em] text-[#A8ABAE] block">
+                        Nombres completos de tus acompañantes <span className="text-red-400">*</span>
                       </label>
                       {formData.nombresAcompanantes.map((name, index) => (
                         <motion.div
                           key={index}
-                          initial={{ opacity: 0, x: -10 }}
+                          initial={{ opacity: 0, x: -15 }}
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ delay: index * 0.1 }}
                         >
@@ -382,8 +393,8 @@ const RSVPForm: React.FC = () => {
                             type="text"
                             value={name}
                             onChange={(e) => handleCompanionNameChange(index, e.target.value)}
-                            className="w-full bg-transparent border-b border-gray-400 py-2 focus:outline-none focus:border-wedding-olive transition-colors font-serif text-lg text-wedding-charcoal"
-                            placeholder={`Acompañante ${index + 1}`}
+                            className="w-full bg-transparent border-b border-[#A8ABAE]/40 py-2 focus:outline-none focus:border-[#536332] font-serif text-lg text-[#2B1A2A]"
+                            placeholder={`Nombre del Acompañante ${index + 1}`}
                           />
                         </motion.div>
                       ))}
@@ -391,19 +402,19 @@ const RSVPForm: React.FC = () => {
                   )}
                 </AnimatePresence>
 
-                {/* Restricciones alimenticias toggle */}
+                {/* Restricciones Alimenticias */}
                 <div className="flex flex-col">
-                  <label className="font-sans text-xs uppercase tracking-widest text-gray-500 mb-4">
-                    ¿Alguna restricción alimenticia?
+                  <label className="font-sans text-xs uppercase tracking-[0.2em] text-[#A8ABAE] mb-4">
+                    ¿Alguien tiene restricciones alimenticias o alergias?
                   </label>
                   <div className="flex gap-4">
                     <button
                       type="button"
                       onClick={() => setFormData(prev => ({ ...prev, tieneRestricciones: false, restricciones: '' }))}
-                      className={`px-6 py-2 border transition-all duration-300 text-sm ${
+                      className={`px-6 py-2 border transition-all text-xs tracking-widest uppercase rounded-full ${
                         formData.tieneRestricciones === false
-                          ? 'bg-wedding-olive text-white border-wedding-olive'
-                          : 'border-gray-300 text-gray-500 hover:border-wedding-olive'
+                          ? 'bg-[#536332] text-[#FCFBF5] border-[#536332]'
+                          : 'border-[#A8ABAE]/40 text-[#2B1A2A]/70'
                       }`}
                     >
                       No
@@ -411,10 +422,10 @@ const RSVPForm: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setFormData(prev => ({ ...prev, tieneRestricciones: true }))}
-                      className={`px-6 py-2 border transition-all duration-300 text-sm ${
+                      className={`px-6 py-2 border transition-all text-xs tracking-widest uppercase rounded-full ${
                         formData.tieneRestricciones === true
-                          ? 'bg-wedding-olive text-white border-wedding-olive'
-                          : 'border-gray-300 text-gray-500 hover:border-wedding-olive'
+                          ? 'bg-[#536332] text-[#FCFBF5] border-[#536332]'
+                          : 'border-[#A8ABAE]/40 text-[#2B1A2A]/70'
                       }`}
                     >
                       Sí
@@ -434,8 +445,8 @@ const RSVPForm: React.FC = () => {
                           value={formData.restricciones}
                           onChange={(e) => setFormData(prev => ({ ...prev, restricciones: e.target.value }))}
                           rows={2}
-                          className="w-full bg-transparent border-b border-gray-400 py-2 focus:outline-none focus:border-wedding-olive font-serif text-lg resize-none"
-                          placeholder="Alergias, vegetariano, vegano, etc."
+                          className="w-full bg-transparent border-b border-[#A8ABAE]/50 py-2 focus:outline-none focus:border-[#536332] font-serif text-lg text-[#2B1A2A] resize-none"
+                          placeholder="Especifícanos (ej. vegetariano, alergia a mariscos, etc.)"
                         />
                       </motion.div>
                     )}
@@ -445,55 +456,56 @@ const RSVPForm: React.FC = () => {
             )}
           </AnimatePresence>
 
-          {/* Mensaje para los novios (siempre visible si ya eligió asistencia) */}
+          {/* Mensaje opcional */}
           <AnimatePresence>
             {formData.asistira !== null && (
               <motion.div
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: 'auto', opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
-                className="overflow-hidden"
+                className="overflow-hidden pt-4 border-t border-[#A8ABAE]/20"
               >
                 <div className="flex flex-col">
-                  <label className="font-sans text-xs uppercase tracking-widest text-gray-500 mb-2">
-                    Mensaje para los novios <span className="text-gray-400 normal-case tracking-normal">(opcional)</span>
+                  <label className="font-sans text-xs uppercase tracking-[0.2em] text-[#A8ABAE] mb-3">
+                    Un mensaje especial para nosotros <span className="normal-case text-[#A8ABAE]/70">(opcional)</span>
                   </label>
                   <textarea
                     value={formData.mensaje}
                     onChange={(e) => setFormData(prev => ({ ...prev, mensaje: e.target.value }))}
                     rows={3}
-                    className="bg-transparent border-b border-gray-400 py-2 focus:outline-none focus:border-wedding-olive font-serif text-lg resize-none"
-                    placeholder="Escribe un mensaje especial..."
+                    className="bg-transparent border-b border-[#A8ABAE]/50 py-2 focus:outline-none focus:border-[#536332] font-serif text-lg text-[#2B1A2A] resize-none"
+                    placeholder="Escribe tus palabras o buenos deseos..."
                   />
                 </div>
               </motion.div>
             )}
           </AnimatePresence>
 
-          {/* Error message */}
+          {/* Error Message */}
           {status === 'error' && (
-            <div className="text-red-800 bg-red-50 p-3 flex items-center justify-center text-sm">
-              <AlertCircle className="w-4 h-4 mr-2 flex-shrink-0" /> Por favor completa los campos requeridos.
+            <div className="text-red-700 bg-red-50 p-3 rounded-sm flex items-center justify-center text-xs uppercase tracking-wider">
+              <AlertCircle className="w-4 h-4 mr-2 flex-shrink-0" /> Por favor completa los campos obligatorios.
             </div>
           )}
 
-          {/* Submit button */}
+          {/* Submit Button */}
           {formData.asistira !== null && (
             <div className="text-center pt-6">
               <button
                 type="submit"
                 disabled={status === 'submitting'}
-                className="bg-wedding-gold text-white px-12 py-4 font-sans text-sm uppercase tracking-[0.2em] hover:bg-yellow-600 transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="bg-[#536332] text-[#FCFBF5] px-12 py-4 font-sans text-xs uppercase tracking-[0.25em] hover:bg-[#2B1A2A] transition-all duration-500 rounded-full shadow-lg disabled:opacity-50"
               >
                 {status === 'submitting' ? (
                   <Loader2 className="animate-spin w-5 h-5 mx-auto" />
                 ) : (
-                  'Enviar Confirmación'
+                  'Enviar Respuesta'
                 )}
               </button>
             </div>
           )}
         </form>
+
       </div>
     </section>
   );
