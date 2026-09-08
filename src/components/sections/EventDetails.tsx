@@ -1,14 +1,14 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { EVENTS } from '@/constants';
-import { MapPin, Clock, Calendar } from 'lucide-react';
+import { MapPin, Clock, Calendar, Shirt } from 'lucide-react'; 
 import { EventDetail } from '@/types';
 
 // --- PALETA OFICIAL DE LA BODA ---
 // Dark Lila: #2B1A2A
 // Gris Perla: #A8ABAE
 // Verde Olivo: #536332
-// Blanco: #FCFBF5
+// Blanco: #FFFFFF (Prohibido)
 
 const EventCard = ({ detail, type }: { detail: EventDetail; type: string }) => (
   <motion.div 
@@ -76,7 +76,7 @@ const EventDetails: React.FC = () => {
     <section className="py-24 md:py-32 bg-[#FCFBF5] border-t border-b border-[#A8ABAE]/20 relative overflow-hidden">
       <div className="max-w-6xl mx-auto px-4 relative z-10">
         
-        {/* Encabezado */}
+        {/* Encabezado Principal */}
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -90,12 +90,91 @@ const EventDetails: React.FC = () => {
         </motion.div>
 
         {/* Tarjetas de Eventos */}
-        <div className="flex flex-col md:flex-row justify-center items-stretch flex-wrap gap-8 md:gap-4">
-          
+        <div className="flex flex-col md:flex-row justify-center items-stretch flex-wrap gap-8 md:gap-4 mb-20 md:mb-28">
           {EVENTS.reception && (
             <EventCard detail={EVENTS.reception} type="Reception" />
           )}
         </div>
+
+        {/* --- NUEVA SECCIÓN: CÓDIGO DE VESTIMENTA --- */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8, delay: 0.2 }}
+          className="bg-white p-10 md:p-14 shadow-[0_10px_30px_-10px_rgba(83,99,50,0.08)] border border-[#A8ABAE]/10 max-w-4xl mx-auto rounded-sm"
+        >
+          <div className="flex flex-col items-center text-center">
+            
+            <h3 className="font-serif italic text-4xl text-[#2B1A2A] mb-8">Código de Vestimenta</h3>
+            <div className="w-12 h-[1px] bg-[#536332]/50 mx-auto mb-10"></div>
+            
+            {/* INSTRUCCIONES Y SVGs DE REFERENCIA */}
+            <div className="flex flex-col md:flex-row gap-12 md:gap-24 mb-12">
+              
+              {/* Mujeres */}
+              <div className="flex flex-col items-center">
+                {/* SVG Vestido */}
+                <svg className="w-14 h-14 text-[#536332] mb-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M8 4h8l1.5 5-2.5 4v8a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1v-8L6.5 9 8 4z" />
+                  <path d="M9 13h6" />
+                </svg>
+                <h4 className="font-sans text-sm uppercase tracking-widest text-[#2B1A2A] font-semibold mb-2">Mujeres</h4>
+                <p className="font-sans text-sm text-[#2B1A2A]/70">Vestido Formal</p>
+              </div>
+
+              {/* Hombres */}
+              <div className="flex flex-col items-center">
+                {/* SVG Traje / Moño */}
+                <svg className="w-14 h-14 text-[#536332] mb-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M5 4l3 5 4-3 4 3 3-5v15a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4z" />
+                  <path d="M12 9v12" />
+                  <path d="M9.5 10.5l2.5-1.5 2.5 1.5" />
+                  <path d="M10 11l2 2 2-2-2 6-2-6z" />
+                </svg>
+                <h4 className="font-sans text-sm uppercase tracking-widest text-[#2B1A2A] font-semibold mb-2">Hombres</h4>
+                <p className="font-sans text-sm text-[#2B1A2A]/70">Traje y corbata / moño</p>
+              </div>
+            </div>
+
+            {/* COLORES PROHIBIDOS */}
+            <p className="font-sans text-base md:text-lg text-[#2B1A2A]/80 max-w-2xl mb-10 leading-relaxed font-light border-t border-[#A8ABAE]/20 pt-10">
+              Nos sentiríamos honrados si evitaran el uso de los siguientes tonos en sus atuendos el dia del evento, ya que estarán reservados exclusivamente para la corte nupcial:
+            </p>
+
+            {/* Muestras de Color Generadas con CSS (4 Columnas) */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-8 w-full max-w-2xl">
+              
+              {/* Color: Dark Lila */}
+              <div className="flex flex-col items-center">
+                <div className="w-20 h-20 bg-[#2B1A2A] rounded-full shadow-inner border border-[#A8ABAE]/20 mb-4"></div>
+                <span className="font-sans text-xs uppercase tracking-widest text-[#2B1A2A] font-medium text-center">Lila<br/>Oscuro</span>
+              </div>
+
+              {/* Color: Gris Perla */}
+              <div className="flex flex-col items-center">
+                <div className="w-20 h-20 bg-[#A8ABAE] rounded-full shadow-inner border border-[#A8ABAE]/20 mb-4"></div>
+                <span className="font-sans text-xs uppercase tracking-widest text-[#2B1A2A] font-medium text-center">Gris<br/>Perla</span>
+              </div>
+
+              {/* Color: Verde Olivo */}
+              <div className="flex flex-col items-center">
+                <div className="w-20 h-20 bg-[#536332] rounded-full shadow-inner border border-[#A8ABAE]/20 mb-4"></div>
+                <span className="font-sans text-xs uppercase tracking-widest text-[#2B1A2A] font-medium text-center">Verde<br/>Olivo</span>
+              </div>
+
+              {/* Color: Blanco */}
+              <div className="flex flex-col items-center">
+                <div className="w-20 h-20 bg-white rounded-full shadow-md border border-[#A8ABAE]/30 mb-4"></div>
+                <span className="font-sans text-xs uppercase tracking-widest text-[#2B1A2A] font-medium text-center">Blanco</span>
+              </div>
+
+            </div>
+
+            <p className="font-sans text-xs text-[#A8ABAE] mt-12 tracking-wide">Agradecemos profundamente su comprensión.</p>
+          </div>
+        </motion.div>
+        {/* --- FIN SECCIÓN DRESS CODE --- */}
 
       </div>
     </section>
