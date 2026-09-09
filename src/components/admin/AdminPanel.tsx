@@ -3,6 +3,8 @@ import { Invitado } from '@/types';
 import { getAllInvitados, createInvitado, deleteInvitado, updateInvitadoAdmin, FirebaseNotConfiguredError } from '@/lib/firebase';
 import { signIn, signOut, onAuthChange, AuthError, type AuthUser } from '@/lib/auth';
 import { useIsDesktop } from '@/hooks';
+// Solo el tipo: se borra al compilar, no arrastra la librería al bundle.
+import type { SheetData } from 'write-excel-file/browser';
 import {
   Users, UserCheck, UserX, Clock, Plus, Trash2, Copy,
   Loader2, LogIn, LogOut, Download, Search, RefreshCw, Eye, Heart, X, CheckCircle, Filter, ChevronUp, ChevronDown, MessageSquare, AlertTriangle, ChevronLeft, ChevronRight, Pencil
@@ -61,6 +63,7 @@ const AdminPanel: React.FC = () => {
   const [selectedInvitado, setSelectedInvitado] = useState<Invitado | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Invitado | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [exportando, setExportando] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
   type SortField = 'nombre' | 'pases' | 'estado' | null;
@@ -258,59 +261,121 @@ const AdminPanel: React.FC = () => {
     setToast('Link copiado al portapapeles');
   };
 
-  const exportCSV = () => {
-    /*
-     * Excel en español usa PUNTO Y COMA como separador, no coma. Con comas
-     * metía toda la fila en la columna A. La línea `sep=;` se lo indica de
-     * forma explícita; Google Sheets lo detecta solo.
-     */
-    const SEP = ';';
+  /*
+   * Exporta un .xlsx real, no un CSV.
+   *
+   * El CSV daba problemas irresolubles desde el código: Excel decide el
+   * separador y la codificación según la configuración regional de cada
+   * máquina, así que el mismo archivo se abría bien en un equipo y en una sola
+   * columna en otro. Un .xlsx no deja nada a la interpretación: lleva los
+   * tipos, los anchos y el formato dentro.
+   *
+   * La librería se importa de forma dinámica: solo se descarga al pulsar el
+   * botón, así no pesa en la carga del panel.
+   */
+  const exportarExcel = async () => {
+    setExportando(true);
+    try {
+      // El paquete no expone raíz: hay que entrar por /browser.
+      const writeXlsxFile = (await import('write-excel-file/browser')).default;
 
-    // Las comillas dentro de un campo se escapan duplicándolas: un mensaje
-    // que las contuviera rompía el archivo entero.
-    const escapar = (valor: unknown) => `"${String(valor ?? '').replace(/"/g, '""')}"`;
+      const estado = (i: Invitado) =>
+        i.asistira === 'yes' ? 'Confirmado' : i.asistira === 'no' ? 'No asiste' : 'Pendiente';
 
-    const fecha = (iso?: string) =>
-      iso ? new Date(iso).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' }) : '';
+      /*
+       * Las fechas de Excel son números sin zona horaria, y la librería las
+       * escribe usando los componentes UTC del Date. Como `fechaConfirmacion`
+       * se guarda en UTC, salía 6 horas adelantada (y a veces el día siguiente).
+       *
+       * Aquí se construye un Date cuyos componentes UTC ya son la hora de
+       * CDMX, así Excel muestra la hora real a la que respondió el invitado.
+       * El truco del locale 'sv-SE' es que da el formato "AAAA-MM-DD hh:mm:ss".
+       */
+      const fechaEnCdmx = (iso?: string) => {
+        if (!iso) return undefined;
+        const enCdmx = new Date(iso).toLocaleString('sv-SE', { timeZone: 'America/Mexico_City' });
+        const fecha = new Date(`${enCdmx.replace(' ', 'T')}Z`);
+        return isNaN(fecha.getTime()) ? undefined : fecha;
+      };
 
-    const headers = [
-      'Código', 'Nombre', 'Estado', 'Pases asignados', 'Personas confirmadas',
-      'Acompañantes', 'Restricciones alimenticias', 'Mensaje', 'Fecha de respuesta',
-    ];
+      const cabecera = { fontWeight: 'bold' as const, backgroundColor: '#FCFBF5', align: 'left' as const };
 
-    const rows = [...invitados]
-      .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'))
-      .map(i => [
-        i.id,
-        i.nombre,
-        i.asistira === 'yes' ? 'Confirmado' : i.asistira === 'no' ? 'No asiste' : 'Pendiente',
-        i.maxInvitados,
-        i.asistira === 'yes' ? i.numInvitados : 0,
-        (i.nombresAcompanantes || []).join(', '),
-        i.restricciones || '',
-        i.mensaje || '',
-        fecha(i.fechaConfirmacion),
-      ]);
+      const filas = [...invitados].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
 
-    // Fila final de totales, para no tener que sumar a mano.
-    const totales = [
-      '', 'TOTAL',
-      `${invitados.filter(i => i.asistira === 'yes').length} confirmados`,
-      invitados.reduce((n, i) => n + (i.maxInvitados || 0), 0),
-      invitados.reduce((n, i) => n + (i.asistira === 'yes' ? i.numInvitados || 0 : 0), 0),
-      '', '', '', '',
-    ];
+      const datos: SheetData = [
+        [
+          { value: 'Código', ...cabecera },
+          { value: 'Nombre', ...cabecera },
+          { value: 'Estado', ...cabecera },
+          { value: 'Pases asignados', ...cabecera },
+          { value: 'Personas confirmadas', ...cabecera },
+          { value: 'Acompañantes', ...cabecera },
+          { value: 'Restricciones alimenticias', ...cabecera },
+          { value: 'Mensaje', ...cabecera },
+          { value: 'Fecha de respuesta', ...cabecera },
+        ],
+        ...filas.map(i => [
+          { value: i.id, type: String },
+          { value: i.nombre, type: String },
+          { value: estado(i), type: String },
+          // Como números de verdad: así Excel puede sumarlos y ordenarlos.
+          { value: i.maxInvitados ?? 0, type: Number },
+          { value: i.asistira === 'yes' ? i.numInvitados ?? 0 : 0, type: Number },
+          { value: (i.nombresAcompanantes || []).join(', '), type: String },
+          { value: i.restricciones || '', type: String },
+          { value: i.mensaje || '', type: String },
+          // `undefined` y no `null`: la celda vacía no admite null cuando se
+          // declara un `type`.
+          {
+            value: fechaEnCdmx(i.fechaConfirmacion),
+            type: Date,
+            format: 'dd/mm/yyyy hh:mm',
+          },
+        ]),
+        [
+          { value: '', type: String },
+          { value: 'TOTAL', fontWeight: 'bold' as const },
+          {
+            value: `${invitados.filter(i => i.asistira === 'yes').length} confirmados`,
+            fontWeight: 'bold' as const,
+          },
+          {
+            value: invitados.reduce((n, i) => n + (i.maxInvitados || 0), 0),
+            type: Number,
+            fontWeight: 'bold' as const,
+          },
+          {
+            value: invitados.reduce((n, i) => n + (i.asistira === 'yes' ? i.numInvitados || 0 : 0), 0),
+            type: Number,
+            fontWeight: 'bold' as const,
+          },
+        ],
+      ];
 
-    const csv = [`sep=${SEP}`]
-      .concat([headers, ...rows, totales].map(r => r.map(escapar).join(SEP)))
-      .join('\r\n');
-    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `invitados_${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+      // En la v4 writeXlsxFile devuelve { toBlob, toFile }: el nombre del
+      // archivo se pasa a toFile, no en las opciones.
+      await writeXlsxFile(datos, {
+        columns: [
+          { width: 12 },  // Código
+          { width: 28 },  // Nombre
+          { width: 14 },  // Estado
+          { width: 16 },  // Pases asignados
+          { width: 20 },  // Personas confirmadas
+          { width: 34 },  // Acompañantes
+          { width: 34 },  // Restricciones
+          { width: 44 },  // Mensaje
+          { width: 20 },  // Fecha
+        ],
+        // Deja los encabezados fijos al desplazarse por la lista.
+        stickyRowsCount: 1,
+        sheet: 'Invitados',
+      }).toFile(`invitados_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    } catch (error) {
+      console.error('Error exportando a Excel:', error);
+      setToast('No se pudo generar el archivo');
+    } finally {
+      setExportando(false);
+    }
   };
 
   const stats = useMemo(() => {
@@ -571,8 +636,16 @@ const AdminPanel: React.FC = () => {
             <button onClick={fetchInvitados} className="p-2.5 text-wedding-pearl hover:text-wedding-lila/70 rounded-lg hover:bg-wedding-pearl/20 transition-all" title="Refrescar">
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
             </button>
-            <button onClick={exportCSV} className="flex items-center gap-2 px-4 py-2.5 border border-wedding-pearl/40 rounded-lg text-xs text-wedding-lila/60 hover:bg-wedding-cream hover:text-wedding-lila/80 transition-all">
-              <Download className="w-3.5 h-3.5" /> CSV
+            <button
+              onClick={exportarExcel}
+              disabled={exportando || invitados.length === 0}
+              title="Descargar la lista en Excel"
+              className="flex items-center gap-2 px-4 py-2.5 border border-wedding-pearl/40 rounded-lg text-xs text-wedding-lila/60 hover:bg-wedding-cream hover:text-wedding-lila/80 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {exportando
+                ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                : <Download className="w-3.5 h-3.5" />}
+              Excel
             </button>
             <a href="/" className="text-xs text-wedding-pearl hover:text-wedding-lila/70 transition-colors ml-2">← Invitación</a>
             <button
