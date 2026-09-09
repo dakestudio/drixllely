@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Invitado } from '@/types';
 import { getAllInvitados, createInvitado, deleteInvitado, updateInvitadoAdmin, FirebaseNotConfiguredError } from '@/lib/firebase';
 import { signIn, signOut, onAuthChange, AuthError, type AuthUser } from '@/lib/auth';
+import { useIsDesktop } from '@/hooks';
 import {
   Users, UserCheck, UserX, Clock, Plus, Trash2, Copy,
   Loader2, LogIn, LogOut, Download, Search, RefreshCw, Eye, Heart, X, CheckCircle, Filter, ChevronUp, ChevronDown, MessageSquare, AlertTriangle, ChevronLeft, ChevronRight, Pencil
@@ -67,9 +68,14 @@ const AdminPanel: React.FC = () => {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   
   const [currentPage, setCurrentPage] = useState(1);
-  // Con ~250 invitaciones, 10 por página daban 25 páginas de clics. Con 30
-  // la tabla sigue siendo escaneable y quedan muchas menos páginas.
-  const ITEMS_PER_PAGE = 30;
+
+  /*
+   * El tamaño de página se adapta a la vista, porque una fila de tabla y una
+   * tarjeta no ocupan lo mismo: 30 tarjetas en un teléfono son unos 4.000 px
+   * de scroll. En escritorio la tabla es compacta y 30 filas caben bien.
+   */
+  const isDesktop = useIsDesktop();
+  const ITEMS_PER_PAGE = isDesktop ? 30 : 10;
 
   // Firebase Auth es ahora la fuente de verdad de la sesión. Ya no hay
   // contraseña en el código ni bandera en sessionStorage: ambas se podían
@@ -356,13 +362,15 @@ const AdminPanel: React.FC = () => {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, statusFilter, sortField, sortDirection]);
+    // ITEMS_PER_PAGE entra aquí porque cambia al girar el teléfono o
+    // redimensionar: si no, podrías quedarte en una página que ya no existe.
+  }, [searchQuery, statusFilter, sortField, sortDirection, ITEMS_PER_PAGE]);
 
   const totalPages = Math.ceil(filteredInvitados.length / ITEMS_PER_PAGE);
   const paginatedInvitados = useMemo(() => {
     const start = (currentPage - 1) * ITEMS_PER_PAGE;
     return filteredInvitados.slice(start, start + ITEMS_PER_PAGE);
-  }, [filteredInvitados, currentPage]);
+  }, [filteredInvitados, currentPage, ITEMS_PER_PAGE]);
 
   /* Restricciones SOLO de quienes asisten: la alergia de alguien que no viene
      es ruido para el salón. Esta es la lista que se le pasa al banquete. */
@@ -392,6 +400,74 @@ const AdminPanel: React.FC = () => {
       setSortDirection('asc');
     }
   };
+
+  /* Piezas compartidas por la tabla de escritorio y las tarjetas de móvil.
+     Son funciones que devuelven JSX (no componentes) para que React no las
+     remonte en cada render. */
+
+  const avisos = (inv: Invitado) => (
+    <>
+      {inv.restricciones && (
+        <span title="Tiene restricciones alimenticias" className="inline-flex">
+          <AlertTriangle className="w-3.5 h-3.5 text-amber-500" aria-label="Tiene restricciones alimenticias" />
+        </span>
+      )}
+      {inv.mensaje && (
+        <span title="Dejó un mensaje" className="inline-flex">
+          <MessageSquare className="w-3.5 h-3.5 text-wedding-olive" aria-label="Dejó un mensaje" />
+        </span>
+      )}
+    </>
+  );
+
+  const estadoBadge = (inv: Invitado) => (
+    <span className={`inline-block shrink-0 px-3 py-1 rounded-full text-[10px] uppercase tracking-wider font-medium ${
+      inv.asistira === 'yes'
+        ? 'bg-emerald-50 text-emerald-700'
+        : inv.asistira === 'no'
+        ? 'bg-red-50 text-red-500'
+        : 'bg-amber-50 text-amber-700'
+    }`}>
+      {inv.asistira === 'yes' ? 'Confirmado' : inv.asistira === 'no' ? 'No asiste' : 'Pendiente'}
+    </span>
+  );
+
+  const enviarWhatsApp = (inv: Invitado) => {
+    const url = `${window.location.origin}/?invite=${inv.id}`;
+    const texto = `¡Hola ${inv.nombre}! ✨\n\nCon mucha emoción y cariño, queremos compartir contigo uno de los días más especiales de nuestras vidas. Nos encantaría que nos acompañaras a celebrar nuestra boda. 💍🤍\n\nHemos reservado ${inv.maxInvitados} pase${inv.maxInvitados !== 1 ? 's' : ''} especialmente para ti.\n\nPor favor, abre tu invitación en el siguiente enlace y confírmanos tu asistencia:\n${url}\n\n¡Esperamos contar contigo!`;
+    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(texto)}`, '_blank');
+  };
+
+  const acciones = (inv: Invitado) => (
+    <>
+      <button onClick={() => setSelectedInvitado(inv)} className="p-2 text-wedding-pearl hover:text-wedding-olive rounded-lg hover:bg-wedding-olive/10 transition-all" title="Ver detalle">
+        <Eye className="w-4 h-4" />
+      </button>
+      <button onClick={() => enviarWhatsApp(inv)} className="p-2 text-wedding-pearl hover:text-emerald-600 rounded-lg hover:bg-emerald-50 transition-all" title="Enviar por WhatsApp">
+        <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.888-.788-1.489-1.761-1.663-2.06-.173-.299-.018-.461.13-.611.134-.135.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+      </button>
+      <button onClick={() => copyLink(inv.id)} className="p-2 text-wedding-pearl hover:text-wedding-lila/70 rounded-lg hover:bg-wedding-pearl/20 transition-all" title="Copiar link">
+        <Copy className="w-4 h-4" />
+      </button>
+      <button onClick={() => handleEditInit(inv)} className="p-2 text-wedding-pearl hover:text-wedding-olive rounded-lg hover:bg-wedding-olive/10 transition-all" title="Editar invitado">
+        <Pencil className="w-4 h-4" />
+      </button>
+      <button onClick={() => setDeleteTarget(inv)} className="p-2 text-wedding-pearl hover:text-red-500 rounded-lg hover:bg-red-50 transition-all" title="Eliminar">
+        <Trash2 className="w-4 h-4" />
+      </button>
+    </>
+  );
+
+  const vacio = () =>
+    invitados.length === 0 ? (
+      <div>
+        <Users className="w-10 h-10 mx-auto mb-3 text-wedding-pearl/70" />
+        <p>No hay invitados aún</p>
+        <p className="text-xs mt-1 text-wedding-pearl/70">Usa el botón "Nuevo Invitado" para agregar</p>
+      </div>
+    ) : (
+      <span>Sin resultados para tu búsqueda</span>
+    );
 
   const SortIcon = ({ field }: { field: SortField }) => {
     if (sortField !== field) return null;
@@ -674,13 +750,10 @@ const AdminPanel: React.FC = () => {
                 )}
               </div>
               <div className="flex gap-2 mt-6">
+                {/* Usa enviarWhatsApp: el texto de la invitación estaba
+                    duplicado aquí y en la tabla, y había que editar los dos. */}
                 <button
-                  onClick={() => {
-                    const baseUrl = window.location.origin;
-                    const url = `${baseUrl}/?invite=${selectedInvitado.id}`;
-                    const rawText = `¡Hola ${selectedInvitado.nombre}! ✨\n\nCon mucha emoción y cariño, queremos compartir contigo uno de los días más especiales de nuestras vidas. Nos encantaría que nos acompañaras a celebrar nuestra boda. 💍🤍\n\nHemos reservado ${selectedInvitado.maxInvitados} pase${selectedInvitado.maxInvitados !== 1 ? 's' : ''} especialmente para ti.\n\nPor favor, abre tu invitación en el siguiente enlace y confírmanos tu asistencia:\n${url}\n\n¡Esperamos contar contigo!`;
-                    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(rawText)}`, '_blank');
-                  }}
+                  onClick={() => enviarWhatsApp(selectedInvitado)}
                   className="flex-1 py-3 bg-emerald-50 border border-emerald-200 rounded-lg text-sm text-emerald-700 hover:bg-emerald-100 hover:text-emerald-800 transition-all flex items-center justify-center gap-2 font-medium"
                 >
                   <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.888-.788-1.489-1.761-1.663-2.06-.173-.299-.018-.461.13-.611.134-.135.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg> WhatsApp
@@ -696,143 +769,141 @@ const AdminPanel: React.FC = () => {
           </div>
         )}
 
-        {/* Table */}
+        {/* Tabla (escritorio) y tarjetas apiladas (móvil).
+            Antes solo había tabla con scroll horizontal: en el teléfono había
+            que arrastrar de lado para ver el estado de cada invitado. */}
         {loading ? (
           <div className="text-center py-20">
             <Loader2 className="w-8 h-8 animate-spin text-wedding-pearl/70 mx-auto" />
           </div>
         ) : (
-          <div className="bg-white border border-wedding-pearl/40 rounded-lg overflow-hidden shadow-sm overflow-x-auto" style={{ scrollbarWidth: 'thin', scrollbarColor: '#A8ABAE transparent' }}>
-            <table className="w-full text-sm min-w-[640px]">
-              <thead>
-                <tr className="border-b border-wedding-pearl/25 bg-wedding-cream/50">
-                  <th className="text-center px-4 py-4 text-[10px] uppercase tracking-widest text-wedding-pearl font-medium w-12">#</th>
-                  <th 
-                    className="text-left px-5 py-4 text-[10px] uppercase tracking-widest text-wedding-pearl font-medium cursor-pointer hover:bg-wedding-pearl/20 transition-colors group select-none"
-                    onClick={() => handleSort('nombre')}
-                  >
-                    Nombre <SortIcon field="nombre" />
-                  </th>
-                  <th className="text-left px-5 py-4 text-[10px] uppercase tracking-widest text-wedding-pearl font-medium">Código</th>
-                  <th 
-                    className="text-center px-5 py-4 text-[10px] uppercase tracking-widest text-wedding-pearl font-medium cursor-pointer hover:bg-wedding-pearl/20 transition-colors group select-none"
-                    onClick={() => handleSort('pases')}
-                  >
-                    Pases Totales <SortIcon field="pases" />
-                  </th>
-                  <th 
-                    className="text-center px-5 py-4 text-[10px] uppercase tracking-widest text-wedding-pearl font-medium cursor-pointer hover:bg-wedding-pearl/20 transition-colors group select-none"
-                    onClick={() => handleSort('estado')}
-                  >
-                    Estado <SortIcon field="estado" />
-                  </th>
-                  <th className="text-center px-5 py-4 text-[10px] uppercase tracking-widest text-wedding-pearl font-medium">Personas</th>
-                  <th className="text-right px-5 py-4 text-[10px] uppercase tracking-widest text-wedding-pearl font-medium">Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {paginatedInvitados.length === 0 ? (
-                  <tr><td colSpan={7} className="text-center py-16 text-wedding-pearl">
-                    {invitados.length === 0 ? (
-                      <div>
-                        <Users className="w-10 h-10 mx-auto mb-3 text-wedding-pearl/70" />
-                        <p>No hay invitados aún</p>
-                        <p className="text-xs mt-1 text-wedding-pearl/70">Usa el botón "Nuevo Invitado" para agregar</p>
-                      </div>
-                    ) : 'Sin resultados para tu búsqueda'}
-                  </td></tr>
-                ) : (
-                  paginatedInvitados.map((inv, index) => (
-                    <tr key={inv.id} className="border-b border-wedding-pearl/15 last:border-b-0 hover:bg-wedding-olive/5 transition-colors">
-                      <td className="px-4 py-4 text-center text-wedding-pearl text-xs font-mono">
-                        {(currentPage - 1) * ITEMS_PER_PAGE + index + 1}
-                      </td>
-                      <td className="px-5 py-4">
-                        <div className="flex items-center gap-2">
+          <>
+            {/* ── Móvil ─────────────────────────────────────── */}
+            <div className="md:hidden space-y-3">
+              {paginatedInvitados.length === 0 ? (
+                <div className="bg-white border border-wedding-pearl/40 rounded-lg py-16 text-center text-wedding-pearl shadow-sm">
+                  {vacio()}
+                </div>
+              ) : (
+                paginatedInvitados.map(inv => (
+                  <div key={inv.id} className="bg-white border border-wedding-pearl/40 rounded-lg p-4 shadow-sm">
+                    <div className="flex items-start justify-between gap-3 mb-3">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-wedding-lila font-medium">{inv.nombre}</span>
-                          {inv.restricciones && (
-                            <span title="Tiene restricciones alimenticias" className="inline-flex">
-                              <AlertTriangle className="w-3.5 h-3.5 text-amber-500" aria-label="Tiene restricciones alimenticias" />
-                            </span>
-                          )}
-                          {inv.mensaje && (
-                            <span title="Dejó un mensaje" className="inline-flex">
-                              <MessageSquare className="w-3.5 h-3.5 text-wedding-olive" aria-label="Dejó un mensaje" />
-                            </span>
-                          )}
+                          {avisos(inv)}
                         </div>
-                      </td>
-                      <td className="px-5 py-4 font-mono text-xs text-wedding-pearl">{inv.id}</td>
-                      <td className="px-5 py-4 text-center text-wedding-lila/60">{inv.maxInvitados}</td>
-                      <td className="px-5 py-4 text-center">
-                        <span className={`inline-block px-3 py-1 rounded-full text-[10px] uppercase tracking-wider font-medium ${
-                          inv.asistira === 'yes'
-                            ? 'bg-emerald-50 text-emerald-700'
-                            : inv.asistira === 'no'
-                            ? 'bg-red-50 text-red-500'
-                            : 'bg-amber-50 text-amber-700'
-                        }`}>
-                          {inv.asistira === 'yes' ? 'Confirmado' : inv.asistira === 'no' ? 'No asiste' : 'Pendiente'}
-                        </span>
-                      </td>
-                      <td className="px-5 py-4 text-center text-wedding-lila/60">{inv.asistira === 'yes' ? inv.numInvitados : '—'}</td>
-                      <td className="px-5 py-4 text-right">
-                        <div className="flex items-center justify-end gap-0.5">
-                          <button onClick={() => setSelectedInvitado(inv)} className="p-2 text-wedding-pearl hover:text-wedding-olive rounded-lg hover:bg-wedding-olive/10 transition-all" title="Ver detalle">
-                            <Eye className="w-4 h-4" />
-                          </button>
-                          <button onClick={() => {
-                            const baseUrl = window.location.origin;
-                            const url = `${baseUrl}/?invite=${inv.id}`;
-                            const rawText = `¡Hola ${inv.nombre}! ✨\n\nCon mucha emoción y cariño, queremos compartir contigo uno de los días más especiales de nuestras vidas. Nos encantaría que nos acompañaras a celebrar nuestra boda. 💍🤍\n\nHemos reservado ${inv.maxInvitados} pase${inv.maxInvitados !== 1 ? 's' : ''} especialmente para ti.\n\nPor favor, abre tu invitación en el siguiente enlace y confírmanos tu asistencia:\n${url}\n\n¡Esperamos contar contigo!`;
-                            window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(rawText)}`, '_blank');
-                          }} className="p-2 text-wedding-pearl hover:text-emerald-600 rounded-lg hover:bg-emerald-50 transition-all" title="Enviar por WhatsApp">
-                            <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.888-.788-1.489-1.761-1.663-2.06-.173-.299-.018-.461.13-.611.134-.135.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-                           </button>
-                           <button onClick={() => copyLink(inv.id)} className="p-2 text-wedding-pearl hover:text-wedding-lila/70 rounded-lg hover:bg-wedding-pearl/20 transition-all" title="Copiar link">
-                             <Copy className="w-4 h-4" />
-                           </button>
-                           <button onClick={() => handleEditInit(inv)} className="p-2 text-wedding-pearl hover:text-wedding-olive rounded-lg hover:bg-wedding-olive/10 transition-all" title="Editar invitado">
-                             <Pencil className="w-4 h-4" />
-                           </button>
-                           <button onClick={() => setDeleteTarget(inv)} className="p-2 text-wedding-pearl hover:text-red-500 rounded-lg hover:bg-red-50 transition-all" title="Eliminar">
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                        <p className="font-mono text-xs text-wedding-pearl mt-1">{inv.id}</p>
+                      </div>
+                      {estadoBadge(inv)}
+                    </div>
+
+                    <div className="flex items-center gap-5 text-xs text-wedding-lila/70 border-t border-wedding-pearl/25 pt-3">
+                      <span>
+                        <span className="text-wedding-pearl uppercase tracking-widest text-[10px]">Pases</span>{' '}
+                        <strong className="text-wedding-lila">{inv.maxInvitados}</strong>
+                      </span>
+                      <span>
+                        <span className="text-wedding-pearl uppercase tracking-widest text-[10px]">Personas</span>{' '}
+                        <strong className="text-wedding-lila">{inv.asistira === 'yes' ? inv.numInvitados : '—'}</strong>
+                      </span>
+                      <div className="ml-auto flex items-center gap-0.5">{acciones(inv)}</div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* ── Escritorio ────────────────────────────────── */}
+            <div className="hidden md:block bg-white border border-wedding-pearl/40 rounded-lg overflow-hidden shadow-sm">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-wedding-pearl/25 bg-wedding-cream/50">
+                    <th className="text-center px-4 py-4 text-[10px] uppercase tracking-widest text-wedding-pearl font-medium w-12">#</th>
+                    <th
+                      className="text-left px-5 py-4 text-[10px] uppercase tracking-widest text-wedding-pearl font-medium cursor-pointer hover:bg-wedding-pearl/20 transition-colors group select-none"
+                      onClick={() => handleSort('nombre')}
+                    >
+                      Nombre <SortIcon field="nombre" />
+                    </th>
+                    <th className="text-left px-5 py-4 text-[10px] uppercase tracking-widest text-wedding-pearl font-medium">Código</th>
+                    <th
+                      className="text-center px-5 py-4 text-[10px] uppercase tracking-widest text-wedding-pearl font-medium cursor-pointer hover:bg-wedding-pearl/20 transition-colors group select-none"
+                      onClick={() => handleSort('pases')}
+                    >
+                      Pases Totales <SortIcon field="pases" />
+                    </th>
+                    <th
+                      className="text-center px-5 py-4 text-[10px] uppercase tracking-widest text-wedding-pearl font-medium cursor-pointer hover:bg-wedding-pearl/20 transition-colors group select-none"
+                      onClick={() => handleSort('estado')}
+                    >
+                      Estado <SortIcon field="estado" />
+                    </th>
+                    <th className="text-center px-5 py-4 text-[10px] uppercase tracking-widest text-wedding-pearl font-medium">Personas</th>
+                    <th className="text-right px-5 py-4 text-[10px] uppercase tracking-widest text-wedding-pearl font-medium">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paginatedInvitados.length === 0 ? (
+                    <tr><td colSpan={7} className="text-center py-16 text-wedding-pearl">{vacio()}</td></tr>
+                  ) : (
+                    paginatedInvitados.map((inv, index) => (
+                      <tr key={inv.id} className="border-b border-wedding-pearl/15 last:border-b-0 hover:bg-wedding-olive/5 transition-colors">
+                        <td className="px-4 py-4 text-center text-wedding-pearl text-xs font-mono">
+                          {(currentPage - 1) * ITEMS_PER_PAGE + index + 1}
+                        </td>
+                        <td className="px-5 py-4">
+                          <div className="flex items-center gap-2">
+                            <span className="text-wedding-lila font-medium">{inv.nombre}</span>
+                            {avisos(inv)}
+                          </div>
+                        </td>
+                        <td className="px-5 py-4 font-mono text-xs text-wedding-pearl">{inv.id}</td>
+                        <td className="px-5 py-4 text-center text-wedding-lila/60">{inv.maxInvitados}</td>
+                        <td className="px-5 py-4 text-center">{estadoBadge(inv)}</td>
+                        <td className="px-5 py-4 text-center text-wedding-lila/60">{inv.asistira === 'yes' ? inv.numInvitados : '—'}</td>
+                        <td className="px-5 py-4 text-right">
+                          <div className="flex items-center justify-end gap-0.5">{acciones(inv)}</div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Paginación, compartida por ambas vistas */}
             {totalPages > 1 && (
-              <div className="px-5 py-4 border-t border-wedding-pearl/25 bg-wedding-cream/50 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="mt-3 md:mt-0 bg-white md:bg-wedding-cream/50 border border-wedding-pearl/40 md:border-0 md:border-t md:border-wedding-pearl/25 rounded-lg md:rounded-t-none px-5 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
                 <p className="text-xs text-wedding-lila/60 text-center sm:text-left">
                   Mostrando del {(currentPage - 1) * ITEMS_PER_PAGE + 1} al {Math.min(currentPage * ITEMS_PER_PAGE, filteredInvitados.length)} de {filteredInvitados.length} invitados
                 </p>
                 <div className="flex items-center gap-1">
-                  <button 
+                  <button
                     onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
                     className="p-1.5 rounded-lg border border-wedding-pearl/40 text-wedding-lila/60 hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    aria-label="Página anterior"
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </button>
                   <span className="text-xs font-medium text-wedding-lila/70 px-3">
                     Página {currentPage} de {totalPages}
                   </span>
-                  <button 
+                  <button
                     onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                     disabled={currentPage === totalPages}
                     className="p-1.5 rounded-lg border border-wedding-pearl/40 text-wedding-lila/60 hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    aria-label="Página siguiente"
                   >
                     <ChevronRight className="w-4 h-4" />
                   </button>
                 </div>
               </div>
             )}
-          </div>
+          </>
         )}
+
 
         {/* ── Muro de mensajes ──────────────────────────────
             Sale gratis: los datos ya vienen en `invitados`, así que no
