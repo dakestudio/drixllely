@@ -30,7 +30,6 @@ const RSVPForm: React.FC = () => {
   const [inviteCode, setInviteCode] = useState<string>('');
 
   const [formData, setFormData] = useState<RSVPData>({
-    telefono: '',
     asistira: null,
     numInvitados: 0,
     nombresAcompanantes: [],
@@ -74,7 +73,6 @@ const RSVPForm: React.FC = () => {
 
       setInvitado(data);
       setFormData({
-        telefono: data.telefono || '',
         asistira: data.asistira || null,
         numInvitados: data.numInvitados || (data.maxInvitados === 1 ? 1 : 0),
         nombresAcompanantes: data.nombresAcompanantes || [],
@@ -120,7 +118,7 @@ const RSVPForm: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.telefono.trim() || !formData.asistira) {
+    if (!formData.asistira) {
       setStatus('validation-error');
       return;
     }
@@ -323,27 +321,6 @@ const RSVPForm: React.FC = () => {
         {/* Form Container */}
         <form onSubmit={handleSubmit} className="space-y-10 bg-white p-8 md:p-14 shadow-form border border-wedding-pearl/20 rounded-sm">
           
-          {/* Teléfono */}
-          <div className="flex flex-col">
-            <label htmlFor="rsvp-telefono" className="font-sans text-xs uppercase tracking-[0.2em] text-wedding-pearl mb-3">
-              Teléfono de contacto <span className="text-red-400">*</span>
-            </label>
-            {/* inputMode="numeric" abre el teclado numérico en móvil; el
-                maxLength anterior (12) cortaba números con lada o guiones. */}
-            <input
-              id="rsvp-telefono"
-              type="tel"
-              inputMode="numeric"
-              autoComplete="tel"
-              required
-              value={formData.telefono}
-              onChange={(e) => setFormData(prev => ({ ...prev, telefono: e.target.value }))}
-              maxLength={16}
-              className="bg-transparent border-b border-wedding-pearl/50 py-3 focus:outline-none focus:border-wedding-olive transition-all font-serif text-xl text-wedding-lila"
-              placeholder="Ej. 55 1234 5678"
-            />
-          </div>
-
           {/* Asistencia Select Buttons */}
           <div className="flex flex-col items-center justify-center py-2">
             <label className="font-sans text-xs uppercase tracking-[0.2em] text-wedding-pearl mb-6">

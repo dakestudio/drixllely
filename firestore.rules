@@ -32,7 +32,7 @@ service cloud.firestore {
       // `list` = recorrer la colección entera.
       //
       // Separarlos es lo importante: sin esto, cualquiera podría descargar la
-      // lista completa de invitados con sus teléfonos.
+      // lista completa de invitados con sus nombres y sus respuestas.
       allow get: if true;
       allow list: if estaAutenticado();
 
@@ -41,7 +41,7 @@ service cloud.firestore {
       // nombre, ni regalarse pases extra, ni escribir en otro documento.
       function confirmacionValida() {
         let camposPermitidos = [
-          'telefono', 'asistira', 'numInvitados', 'nombresAcompanantes',
+          'asistira', 'numInvitados', 'nombresAcompanantes',
           'tieneRestricciones', 'restricciones', 'mensaje',
           'confirmado', 'fechaConfirmacion'
         ];
@@ -59,7 +59,6 @@ service cloud.firestore {
           && nuevo.asistira in ['yes', 'no']
           && nuevo.confirmado == true
           // Límites de tamaño para que nadie use la base como almacén.
-          && nuevo.telefono is string && nuevo.telefono.size() <= 20
           && nuevo.mensaje is string && nuevo.mensaje.size() <= 1000
           && nuevo.restricciones is string && nuevo.restricciones.size() <= 500
           && nuevo.nombresAcompanantes.size() <= 20;

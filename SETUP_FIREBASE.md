@@ -42,7 +42,7 @@ Lo que consigues con esas reglas:
 
 La regla clave es separar `get` (leer un documento cuyo código ya conoces) de
 `list` (recorrer la colección entera). Sin esa separación, cualquiera podría
-descargar la lista completa con los teléfonos de todos los invitados.
+descargar la lista completa con los nombres y respuestas de todos los invitados.
 
 ## 5. Crear los usuarios del panel
 
@@ -61,8 +61,6 @@ Crea un archivo `.env` en la raíz (junto a `package.json`) con los valores del
 paso 3:
 
 ```bash
-VITE_SITE_URL=https://drixllely.vercel.app
-
 VITE_FIREBASE_API_KEY=AIza...
 VITE_FIREBASE_AUTH_DOMAIN=drixllely-boda.firebaseapp.com
 VITE_FIREBASE_PROJECT_ID=drixllely-boda
@@ -102,7 +100,6 @@ invitación** (el que va en `?invite=XXXXXX`).
   maxInvitados: 4,                // Cupo máximo. Solo lo edita el panel
   confirmado: false,
   asistira: null,                 // 'yes' | 'no'
-  telefono: "",
   numInvitados: 0,                // Nunca puede superar maxInvitados
   nombresAcompanantes: [],
   tieneRestricciones: null,

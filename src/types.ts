@@ -8,7 +8,6 @@ export interface EventDetail {
 }
 
 export interface RSVPData {
-  telefono: string;
   asistira: 'yes' | 'no' | null;
   numInvitados: number;
   nombresAcompanantes: string[];
@@ -23,7 +22,6 @@ export interface Invitado {
   maxInvitados: number;
   confirmado: boolean;
   asistira: 'yes' | 'no' | null;
-  telefono: string;
   numInvitados: number;
   nombresAcompanantes: string[];
   tieneRestricciones: boolean | null;

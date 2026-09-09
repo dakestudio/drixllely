@@ -150,7 +150,6 @@ const AdminPanel: React.FC = () => {
         maxInvitados: newExtras + 1,
         confirmado: false,
         asistira: null,
-        telefono: '',
         numInvitados: 0,
         nombresAcompanantes: [],
         tieneRestricciones: null,
@@ -221,12 +220,12 @@ const AdminPanel: React.FC = () => {
   };
 
   const exportCSV = () => {
-    const headers = ['Código','Nombre','Confirmado','Asistirá','Nº Invitados','Acompañantes','Teléfono','Restricciones','Mensaje'];
+    const headers = ['Código','Nombre','Confirmado','Asistirá','Nº Invitados','Acompañantes','Restricciones','Mensaje'];
     const rows = invitados.map(i => [
       i.id, i.nombre, i.confirmado ? 'Sí' : 'No',
       i.asistira === 'yes' ? 'Sí' : i.asistira === 'no' ? 'No' : 'Pendiente',
       i.numInvitados, (i.nombresAcompanantes || []).join('; '),
-      i.telefono, i.restricciones || '', i.mensaje || '',
+      i.restricciones || '', i.mensaje || '',
     ]);
     const csv = [headers, ...rows].map(r => r.map(c => `"${c}"`).join(',')).join('\n');
     const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
@@ -594,7 +593,6 @@ const AdminPanel: React.FC = () => {
                     {selectedInvitado.asistira === 'yes' ? 'Confirmado' : selectedInvitado.asistira === 'no' ? 'No asiste' : 'Pendiente'}
                   </span>
                 </div>
-                <div className="flex justify-between border-b border-wedding-pearl/25 pb-3"><span className="text-wedding-pearl">Teléfono</span><span className="text-wedding-lila/80">{selectedInvitado.telefono || '—'}</span></div>
                 <div className="flex justify-between border-b border-wedding-pearl/25 pb-3"><span className="text-wedding-pearl">Nº Personas</span><span className="text-wedding-lila/80">{selectedInvitado.numInvitados || '—'}</span></div>
                 {selectedInvitado.nombresAcompanantes?.length > 0 && (
                   <div className="border-b border-wedding-pearl/25 pb-3"><span className="text-wedding-pearl block mb-2">Acompañantes</span>
