@@ -58,6 +58,8 @@ const AdminPanel: React.FC = () => {
   const [newExtras, setNewExtras] = useState<number>(-1);
   const [creating, setCreating] = useState(false);
   const [selectedInvitado, setSelectedInvitado] = useState<Invitado | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Invitado | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
   type SortField = 'nombre' | 'pases' | 'estado' | null;
@@ -116,6 +118,30 @@ const AdminPanel: React.FC = () => {
   };
 
   useEffect(() => { if (user) fetchInvitados(); }, [user]);
+
+  /* El confirm() nativo se cerraba con Escape y bloqueaba la página.
+     Al sustituirlo por modales propios hay que reponer las dos cosas. */
+  const hayModalAbierto = Boolean(deleteTarget || decreaseWarning || selectedInvitado);
+
+  useEffect(() => {
+    if (!hayModalAbierto) return;
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape' || deleting || creating) return;
+      setDeleteTarget(null);
+      setDecreaseWarning(null);
+      setSelectedInvitado(null);
+    };
+
+    const previo = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', onKeyDown);
+
+    return () => {
+      document.body.style.overflow = previo;
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [hayModalAbierto, deleting, creating]);
 
   const handleCreateOrUpdate = async () => {
     if (!newNombre.trim()) return;
@@ -208,11 +234,16 @@ const AdminPanel: React.FC = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleDelete = async (code: string) => {
-    if (!confirm('¿Estás seguro de eliminar este invitado?')) return;
-    await deleteInvitado(code);
-    setToast('Invitado eliminado');
-    await fetchInvitados();
+  /* El confirm() del navegador rompía el diseño y no se puede estilizar.
+     Se sustituye por un modal propio, coherente con el resto del panel. */
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    const ok = await deleteInvitado(deleteTarget.id);
+    setDeleting(false);
+    setDeleteTarget(null);
+    setToast(ok ? 'Invitado eliminado' : 'No se pudo eliminar el invitado');
+    if (ok) await fetchInvitados();
   };
 
   const copyLink = (code: string) => {
@@ -222,14 +253,51 @@ const AdminPanel: React.FC = () => {
   };
 
   const exportCSV = () => {
-    const headers = ['Código','Nombre','Confirmado','Asistirá','Nº Invitados','Acompañantes','Restricciones','Mensaje'];
-    const rows = invitados.map(i => [
-      i.id, i.nombre, i.confirmado ? 'Sí' : 'No',
-      i.asistira === 'yes' ? 'Sí' : i.asistira === 'no' ? 'No' : 'Pendiente',
-      i.numInvitados, (i.nombresAcompanantes || []).join('; '),
-      i.restricciones || '', i.mensaje || '',
-    ]);
-    const csv = [headers, ...rows].map(r => r.map(c => `"${c}"`).join(',')).join('\n');
+    /*
+     * Excel en español usa PUNTO Y COMA como separador, no coma. Con comas
+     * metía toda la fila en la columna A. La línea `sep=;` se lo indica de
+     * forma explícita; Google Sheets lo detecta solo.
+     */
+    const SEP = ';';
+
+    // Las comillas dentro de un campo se escapan duplicándolas: un mensaje
+    // que las contuviera rompía el archivo entero.
+    const escapar = (valor: unknown) => `"${String(valor ?? '').replace(/"/g, '""')}"`;
+
+    const fecha = (iso?: string) =>
+      iso ? new Date(iso).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' }) : '';
+
+    const headers = [
+      'Código', 'Nombre', 'Estado', 'Pases asignados', 'Personas confirmadas',
+      'Acompañantes', 'Restricciones alimenticias', 'Mensaje', 'Fecha de respuesta',
+    ];
+
+    const rows = [...invitados]
+      .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'))
+      .map(i => [
+        i.id,
+        i.nombre,
+        i.asistira === 'yes' ? 'Confirmado' : i.asistira === 'no' ? 'No asiste' : 'Pendiente',
+        i.maxInvitados,
+        i.asistira === 'yes' ? i.numInvitados : 0,
+        (i.nombresAcompanantes || []).join(', '),
+        i.restricciones || '',
+        i.mensaje || '',
+        fecha(i.fechaConfirmacion),
+      ]);
+
+    // Fila final de totales, para no tener que sumar a mano.
+    const totales = [
+      '', 'TOTAL',
+      `${invitados.filter(i => i.asistira === 'yes').length} confirmados`,
+      invitados.reduce((n, i) => n + (i.maxInvitados || 0), 0),
+      invitados.reduce((n, i) => n + (i.asistira === 'yes' ? i.numInvitados || 0 : 0), 0),
+      '', '', '', '',
+    ];
+
+    const csv = [`sep=${SEP}`]
+      .concat([headers, ...rows, totales].map(r => r.map(escapar).join(SEP)))
+      .join('\r\n');
     const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -464,8 +532,11 @@ const AdminPanel: React.FC = () => {
         )}
 
         {/* Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-4">
-          <StatCard icon={Users} label="Total" value={stats.total} accent="bg-wedding-lila/60" />
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-8">
+          {/* "Invitaciones" y no "Total": esta tarjeta cuenta documentos, no
+              personas. Junto a "Personas" eran dos unidades distintas con la
+              misma pinta, y se leían como si midieran lo mismo. */}
+          <StatCard icon={Users} label="Invitaciones" value={stats.total} accent="bg-wedding-lila/60" />
           <StatCard icon={UserCheck} label="Confirmados" value={stats.confirmados} accent="bg-emerald-500" />
           <StatCard icon={UserX} label="No Asisten" value={stats.noAsisten} accent="bg-red-400" />
           {/* Los colores de ESTADO no se migran a la paleta a propósito:
@@ -476,50 +547,11 @@ const AdminPanel: React.FC = () => {
           <StatCard className="col-span-2 sm:col-span-1" icon={Users} label="Personas" value={stats.totalPersonas} accent="bg-wedding-olive" />
         </div>
 
-        {/* Progress Bar */}
-        {stats.total > 0 && (
-          <div className="bg-white border border-wedding-pearl/40 rounded-lg p-5 mb-8 shadow-sm">
-            <div className="flex justify-between text-xs font-medium text-wedding-lila/60 mb-2">
-              <span>Progreso de Confirmaciones</span>
-              <span>{Math.round((stats.confirmados / stats.total) * 100)}% Confirmado</span>
-            </div>
-            <div className="w-full h-3 bg-wedding-pearl/20 rounded-full overflow-hidden flex">
-              <div 
-                style={{ width: `${(stats.confirmados / stats.total) * 100}%` }} 
-                className="bg-emerald-500 h-full transition-all duration-500" 
-                title={`${stats.confirmados} Confirmados`}
-              />
-              <div 
-                style={{ width: `${(stats.noAsisten / stats.total) * 100}%` }} 
-                className="bg-red-400 h-full transition-all duration-500" 
-                title={`${stats.noAsisten} No Asisten`}
-              />
-              <div 
-                style={{ width: `${(stats.pendientes / stats.total) * 100}%` }} 
-                className="bg-amber-400 h-full transition-all duration-500"
-                title={`${stats.pendientes} Pendientes`}
-              />
-            </div>
-            <div className="flex gap-4 mt-3 text-[10px] uppercase tracking-widest text-wedding-pearl justify-center">
-              <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500"></span> Confirman</div>
-              <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-400"></span> No asistirán</div>
-              <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-400"></span> Pendientes</div>
-            </div>
-          </div>
-        )}
-
         {/* Actions Bar */}
         <div className="flex flex-col sm:flex-row gap-3 mb-6">
-          <div className="flex-1 relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-wedding-pearl" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Buscar por nombre o código..."
-              className="w-full pl-11 pr-4 py-3 bg-white border border-wedding-pearl/40 rounded-lg text-sm text-wedding-lila placeholder-wedding-pearl/70 focus:outline-none focus:border-wedding-olive focus:ring-2 focus:ring-wedding-olive/20 transition-all"
-            />
-          </div>
+          {/* La acción de crear va primero y sola. El buscador y el filtro
+              hacen lo mismo —acotar la tabla— así que se quedan juntos: antes
+              el botón los partía por la mitad. */}
           <button
             onClick={() => {
               setNewNombre('');
@@ -531,6 +563,16 @@ const AdminPanel: React.FC = () => {
           >
             <Plus className="w-4 h-4" /> Nuevo Invitado
           </button>
+          <div className="flex-1 relative">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-wedding-pearl" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Buscar por nombre o código..."
+              className="w-full pl-11 pr-4 py-3 bg-white border border-wedding-pearl/40 rounded-lg text-sm text-wedding-lila placeholder-wedding-pearl/70 focus:outline-none focus:border-wedding-olive focus:ring-2 focus:ring-wedding-olive/20 transition-all"
+            />
+          </div>
           <div className="relative shrink-0">
             <Filter className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-wedding-pearl pointer-events-none" />
             <select
@@ -753,7 +795,7 @@ const AdminPanel: React.FC = () => {
                            <button onClick={() => handleEditInit(inv)} className="p-2 text-wedding-pearl hover:text-wedding-olive rounded-lg hover:bg-wedding-olive/10 transition-all" title="Editar invitado">
                              <Pencil className="w-4 h-4" />
                            </button>
-                           <button onClick={() => handleDelete(inv.id)} className="p-2 text-wedding-pearl hover:text-red-500 rounded-lg hover:bg-red-50 transition-all" title="Eliminar">
+                           <button onClick={() => setDeleteTarget(inv)} className="p-2 text-wedding-pearl hover:text-red-500 rounded-lg hover:bg-red-50 transition-all" title="Eliminar">
                             <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
@@ -879,10 +921,67 @@ const AdminPanel: React.FC = () => {
 
       </main>
 
+      {/* Modal Confirmar Eliminación */}
+      {deleteTarget && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" role="dialog" aria-modal="true">
+          {/* Sin tinte, solo desenfoque, y sin cerrar al hacer clic fuera:
+              borrar un invitado exige una decisión explícita. */}
+          <div className="absolute inset-0 backdrop-blur-sm"></div>
+          <div className="relative bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden text-center animate-fade-in-up">
+            <div className="bg-red-50 p-6 flex justify-center">
+              <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center">
+                <Trash2 className="w-8 h-8" />
+              </div>
+            </div>
+            <div className="p-6">
+              <h3 className="text-xl font-serif text-wedding-lila mb-2">Eliminar invitado</h3>
+              <p className="text-wedding-lila/70 mb-4">
+                Vas a eliminar a <strong className="text-wedding-lila">{deleteTarget.nombre}</strong> de la lista.
+              </p>
+
+              {/* Avisa de lo que se pierde: el enlace deja de funcionar y,
+                  si ya había confirmado, esa respuesta desaparece. */}
+              <div className="bg-wedding-cream border border-wedding-pearl/40 rounded-lg p-4 mb-2 text-left space-y-2">
+                <p className="text-sm text-wedding-lila/70">
+                  Su enlace <span className="font-mono text-xs text-wedding-lila">?invite={deleteTarget.id}</span> dejará de funcionar.
+                </p>
+                {deleteTarget.confirmado && (
+                  <p className="text-sm text-red-600">
+                    Ya había respondido
+                    {deleteTarget.asistira === 'yes'
+                      ? ` confirmando ${deleteTarget.numInvitados} ${deleteTarget.numInvitados === 1 ? 'persona' : 'personas'}`
+                      : ' que no asistiría'}
+                    . Esa confirmación se perderá.
+                  </p>
+                )}
+                <p className="text-sm text-wedding-lila/70">Esta acción no se puede deshacer.</p>
+              </div>
+
+              <div className="flex gap-3 mt-6">
+                <button
+                  onClick={() => setDeleteTarget(null)}
+                  disabled={deleting}
+                  className="flex-1 px-4 py-3 bg-wedding-pearl/20 text-wedding-lila/70 rounded-xl hover:bg-wedding-pearl/30 transition-colors font-medium disabled:opacity-60"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleDelete}
+                  disabled={deleting}
+                  className="flex-1 px-4 py-3 bg-red-700 text-white rounded-xl hover:bg-red-800 transition-colors font-medium flex justify-center disabled:opacity-60"
+                >
+                  {deleting ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Sí, eliminar'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Modal Advertencia Reducción Pases */}
       {decreaseWarning && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-wedding-lila/60 backdrop-blur-sm" onClick={() => setDecreaseWarning(null)}></div>
+          <div className="absolute inset-0 backdrop-blur-sm"></div>
           <div className="relative bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden text-center animate-fade-in-up">
             <div className="bg-wedding-olive/10 p-6 flex justify-center">
               <div className="w-16 h-16 bg-wedding-olive/15 text-wedding-olive rounded-full flex items-center justify-center">

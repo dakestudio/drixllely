@@ -23,6 +23,21 @@
   --font-serif: "Playfair Display", serif;
   --font-display: "Cinzel", serif;
   --font-sans: "Lato", sans-serif;
+
+  /* Entrada de los modales del panel. La clase `animate-fade-in-up` ya se
+     usaba, pero nunca se había definido: los modales aparecían de golpe. */
+  --animate-fade-in-up: fade-in-up 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 @layer base {
