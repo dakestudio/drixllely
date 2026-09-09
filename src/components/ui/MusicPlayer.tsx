@@ -6,31 +6,38 @@ import { useWedding } from '@/context';
 import weddingSong from '@/assets/music/wedding-song.mp3';
 
 const MusicPlayer: React.FC = () => {
-  const { isEntered, isMusicPlaying, toggleMusic, audioRef } = useWedding();
+  const { isEntered, isMusicPlaying, toggleMusic, setMusicPlaying, audioRef } = useWedding();
 
   // Sync play/pause state with audio element (for toggle button)
   useEffect(() => {
-    if (audioRef.current) {
-      if (isMusicPlaying) {
-        audioRef.current.play().catch(() => {
-          // Autoplay blocked — user can toggle manually
-        });
-      } else {
-        audioRef.current.pause();
-      }
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    if (isMusicPlaying) {
+      audio.play().catch(() => {
+        // Autoplay blocked — reflect reality in the button instead of lying.
+        setMusicPlaying(false);
+      });
+    } else {
+      audio.pause();
     }
-  }, [isMusicPlaying, audioRef]);
+  }, [isMusicPlaying, audioRef, setMusicPlaying]);
 
   return (
     <>
-      {/* Audio element is always in the DOM so audioRef is available for enterSite() */}
-      <audio 
-        ref={audioRef} 
-        loop 
-        preload="auto"
-      >
-        <source src={weddingSong} type="audio/mpeg" />
-      </audio>
+      {/*
+        preload="none" keeps the ~6.7 MB track off the critical path. It does not
+        break playback: enterSite() calls .play() inside the click handler's call
+        stack, which is what iOS/Android require, and buffering starts there.
+      */}
+      <audio
+        ref={audioRef}
+        loop
+        preload="none"
+        src={weddingSong}
+        onPlay={() => setMusicPlaying(true)}
+        onPause={() => setMusicPlaying(false)}
+      />
 
       <AnimatePresence>
         {isEntered && (
@@ -44,30 +51,24 @@ const MusicPlayer: React.FC = () => {
               onClick={toggleMusic}
               whileHover={{ scale: 1.1, boxShadow: '0 8px 30px rgba(0,0,0,0.2)' }}
               whileTap={{ scale: 0.9 }}
-              className={`w-14 h-14 rounded-full shadow-xl flex items-center justify-center transition-colors duration-300 backdrop-blur-sm ${
+              className={`w-14 h-14 rounded-full shadow-xl flex items-center justify-center transition-colors duration-300 backdrop-blur-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-wedding-olive focus-visible:ring-offset-2 ${
                 isMusicPlaying
-                  ? 'bg-wedding-olive/90 text-white'
-                  : 'bg-white/90 text-wedding-charcoal border border-wedding-sand'
+                  ? 'bg-wedding-olive/90 text-wedding-cream'
+                  : 'bg-wedding-cream/90 text-wedding-lila border border-wedding-pearl/40'
               }`}
               aria-label={isMusicPlaying ? 'Pausar música' : 'Reproducir música'}
+              aria-pressed={isMusicPlaying}
             >
-              {isMusicPlaying ? (
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ type: 'spring', stiffness: 300 }}
-                >
-                  <Volume2 size={20} strokeWidth={1.5} />
-                </motion.div>
-              ) : (
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ type: 'spring', stiffness: 300 }}
-                >
-                  <VolumeX size={20} strokeWidth={1.5} />
-                </motion.div>
-              )}
+              <motion.div
+                key={isMusicPlaying ? 'on' : 'off'}
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: 'spring', stiffness: 300 }}
+              >
+                {isMusicPlaying
+                  ? <Volume2 size={20} strokeWidth={1.5} />
+                  : <VolumeX size={20} strokeWidth={1.5} />}
+              </motion.div>
             </motion.button>
 
             {/* Pulse ring animation when playing */}

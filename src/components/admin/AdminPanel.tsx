@@ -7,7 +7,19 @@ import {
 } from 'lucide-react';
 
 
-const ADMIN_PASSWORD = 'boda2026';
+/*
+ * ⚠️ Esto es un portón, no una cerradura.
+ *
+ * Cualquier contraseña que viva en el frontend termina en el bundle que el
+ * navegador descarga: se lee abriendo las DevTools. Sacarla a una variable de
+ * entorno evita que quede escrita en el repositorio de GitHub, pero NO impide
+ * que alguien la extraiga del JavaScript ya desplegado.
+ *
+ * La protección real de la lista de invitados son las reglas de Firestore.
+ * Mientras la colección `invitados` acepte escrituras anónimas, este panel es
+ * solo comodidad — ver las notas de seguridad en README.md.
+ */
+const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD ?? 'boda2026';
 
 function generateCode(): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -587,8 +599,16 @@ const AdminPanel: React.FC = () => {
                       <td className="px-5 py-4">
                         <div className="flex items-center gap-2">
                           <span className="text-stone-800 font-medium">{inv.nombre}</span>
-                          {inv.restricciones && <AlertTriangle className="w-3.5 h-3.5 text-amber-500" title="Tiene restricciones alimenticias" />}
-                          {inv.mensaje && <MessageSquare className="w-3.5 h-3.5 text-blue-400" title="Dejó un mensaje" />}
+                          {inv.restricciones && (
+                            <span title="Tiene restricciones alimenticias" className="inline-flex">
+                              <AlertTriangle className="w-3.5 h-3.5 text-amber-500" aria-label="Tiene restricciones alimenticias" />
+                            </span>
+                          )}
+                          {inv.mensaje && (
+                            <span title="Dejó un mensaje" className="inline-flex">
+                              <MessageSquare className="w-3.5 h-3.5 text-blue-400" aria-label="Dejó un mensaje" />
+                            </span>
+                          )}
                         </div>
                       </td>
                       <td className="px-5 py-4 font-mono text-xs text-stone-400">{inv.id}</td>

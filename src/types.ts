@@ -1,11 +1,3 @@
-export interface StoryEvent {
-  id: number;
-  year: string;
-  title: string;
-  description: string;
-  image?: string;
-}
-
 export interface EventDetail {
   title: string;
   date: string;
@@ -44,6 +36,9 @@ export interface GalleryImage {
   id: number;
   src: string;
   alt: string;
+  /** Intrinsic size, used to reserve layout space and avoid CLS. */
+  width: number;
+  height: number;
 }
 
 export interface TimeLeft {

@@ -1,10 +1,11 @@
-import React, { createContext, useContext, useState, useEffect, useRef, PropsWithChildren } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback, PropsWithChildren } from 'react';
 
 interface WeddingContextType {
   isEntered: boolean;
   enterSite: () => void;
   isMusicPlaying: boolean;
   toggleMusic: () => void;
+  setMusicPlaying: (playing: boolean) => void;
   audioRef: React.RefObject<HTMLAudioElement | null>;
 }
 
@@ -15,44 +16,65 @@ export const WeddingProvider = ({ children }: PropsWithChildren) => {
   const [isMusicPlaying, setIsMusicPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Lock body scroll while WelcomeScreen is visible
+  /*
+   * Lock the page while the WelcomeScreen is up.
+   * `overflow: hidden` on <body> is not enough on Safari iOS — the page still
+   * rubber-bands. Pinning the body with `position: fixed` and restoring the
+   * scroll offset afterwards is the technique that actually holds.
+   */
   useEffect(() => {
-    if (!isEntered) {
-      document.body.style.overflow = 'hidden';
-      document.documentElement.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-      document.documentElement.style.overflow = '';
-    }
+    if (isEntered) return;
+
+    const scrollY = window.scrollY;
+    const { body } = document;
+    const previous = {
+      position: body.style.position,
+      top: body.style.top,
+      width: body.style.width,
+      overflow: body.style.overflow,
+    };
+
+    body.style.position = 'fixed';
+    body.style.top = `-${scrollY}px`;
+    body.style.width = '100%';
+    body.style.overflow = 'hidden';
+
     return () => {
-      document.body.style.overflow = '';
-      document.documentElement.style.overflow = '';
+      body.style.position = previous.position;
+      body.style.top = previous.top;
+      body.style.width = previous.width;
+      body.style.overflow = previous.overflow;
+      window.scrollTo(0, scrollY);
     };
   }, [isEntered]);
 
-  const enterSite = () => {
+  const enterSite = useCallback(() => {
     setIsEntered(true);
-    setIsMusicPlaying(true);
 
-    // Play audio directly in the click handler call stack (required for mobile)
-    if (audioRef.current) {
-      audioRef.current.play().catch(() => {
-        // Autoplay still blocked on some browsers — user can toggle manually
-      });
+    // Play must happen inside the click handler's call stack for mobile
+    // autoplay policies to allow it.
+    const audio = audioRef.current;
+    if (audio) {
+      audio
+        .play()
+        .then(() => setIsMusicPlaying(true))
+        .catch(() => setIsMusicPlaying(false));
     }
-  };
+  }, []);
 
-  const toggleMusic = () => {
-    setIsMusicPlaying(prev => !prev);
-  };
+  const toggleMusic = useCallback(() => setIsMusicPlaying(prev => !prev), []);
+  const setMusicPlaying = useCallback((playing: boolean) => setIsMusicPlaying(playing), []);
 
   return (
-    <WeddingContext.Provider value={{ isEntered, enterSite, isMusicPlaying, toggleMusic, audioRef }}>
+    <WeddingContext.Provider
+      value={{ isEntered, enterSite, isMusicPlaying, toggleMusic, setMusicPlaying, audioRef }}
+    >
       {children}
     </WeddingContext.Provider>
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useWedding = () => {
   const context = useContext(WeddingContext);
   if (!context) {

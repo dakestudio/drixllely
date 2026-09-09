@@ -1,11 +1,11 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { EVENTS } from '@/constants';
-import { MapPin, Clock, Calendar, Shirt } from 'lucide-react'; 
+import { MapPin, Clock, Calendar } from 'lucide-react';
 import { EventDetail } from '@/types';
 
 // --- PALETA OFICIAL DE LA BODA ---
-// Dark Lila: #2B1A2A
+// Dark Lila: #381031
 // Gris Perla: #A8ABAE
 // Verde Olivo: #536332
 // Blanco: #FFFFFF (Prohibido)
@@ -18,7 +18,7 @@ const EventCard = ({ detail, type }: { detail: EventDetail; type: string }) => (
     transition={{ duration: 0.8 }}
     whileHover={{ y: -8 }}
     whileTap={{ scale: 0.98 }}
-    className="bg-white p-8 sm:p-10 md:p-12 shadow-[0_15px_35px_-15px_rgba(43,26,42,0.12)] border-t-2 border-[#536332] w-full max-w-lg mx-auto md:mx-4 mb-10 md:mb-0 relative rounded-sm flex flex-col justify-between"
+    className="bg-white p-8 sm:p-10 md:p-12 shadow-[0_15px_35px_-15px_rgba(56,16,49,0.12)] border-t-2 border-[#536332] w-full max-w-lg mx-auto md:mx-4 mb-10 md:mb-0 relative rounded-sm flex flex-col justify-between"
   >
     {/* Ícono Superior Emblema */}
     <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-[#FCFBF5] p-3 rounded-full border border-[#536332]/30 shadow-sm">
@@ -34,9 +34,9 @@ const EventCard = ({ detail, type }: { detail: EventDetail; type: string }) => (
     </div>
     
     <div>
-      <h3 className="font-serif italic text-3xl text-center text-[#2B1A2A] mb-8 mt-2">{detail.title}</h3>
+      <h3 className="font-serif italic text-3xl text-center text-[#381031] mb-8 mt-2">{detail.title}</h3>
       
-      <div className="space-y-5 font-sans text-[#2B1A2A]/80">
+      <div className="space-y-5 font-sans text-[#381031]/80">
         <div className="flex items-center">
           <Calendar className="w-5 h-5 text-[#536332] mr-4 flex-shrink-0" strokeWidth={1.5} />
           <span className="text-sm md:text-base font-light tracking-wide">{detail.date}</span>
@@ -50,7 +50,7 @@ const EventCard = ({ detail, type }: { detail: EventDetail; type: string }) => (
         <div className="flex items-start">
           <MapPin className="w-5 h-5 text-[#536332] mr-4 mt-1 flex-shrink-0" strokeWidth={1.5} />
           <div>
-            <p className="font-medium text-[#2B1A2A] text-base">{detail.locationName}</p>
+            <p className="font-medium text-[#381031] text-base">{detail.locationName}</p>
             <p className="text-xs md:text-sm text-[#A8ABAE] font-light mt-0.5">{detail.address}</p>
           </div>
         </div>
@@ -84,7 +84,7 @@ const EventDetails: React.FC = () => {
           viewport={{ once: true }}
           className="text-center mb-16 md:mb-20"
         >
-          <h2 className="font-serif italic text-4xl sm:text-5xl md:text-6xl text-[#2B1A2A] mb-3">Dónde & Cuándo</h2>
+          <h2 className="font-serif italic text-4xl sm:text-5xl md:text-6xl text-[#381031] mb-3">Dónde & Cuándo</h2>
           <div className="w-16 h-[1px] bg-[#536332] mx-auto mb-4"></div>
           <p className="font-sans text-xs uppercase tracking-[0.3em] text-[#A8ABAE]">Acompáñanos a celebrar este día especial</p>
         </motion.div>
@@ -106,7 +106,7 @@ const EventDetails: React.FC = () => {
         >
           <div className="flex flex-col items-center text-center">
             
-            <h3 className="font-serif italic text-4xl text-[#2B1A2A] mb-8">Código de Vestimenta</h3>
+            <h3 className="font-serif italic text-4xl text-[#381031] mb-8">Código de Vestimenta</h3>
             <div className="w-12 h-[1px] bg-[#536332]/50 mx-auto mb-10"></div>
             
             {/* INSTRUCCIONES Y SVGs DE REFERENCIA */}
@@ -119,8 +119,8 @@ const EventDetails: React.FC = () => {
                   <path d="M8 4h8l1.5 5-2.5 4v8a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1v-8L6.5 9 8 4z" />
                   <path d="M9 13h6" />
                 </svg>
-                <h4 className="font-sans text-sm uppercase tracking-widest text-[#2B1A2A] font-semibold mb-2">Mujeres</h4>
-                <p className="font-sans text-sm text-[#2B1A2A]/70">Vestido Formal</p>
+                <h4 className="font-sans text-sm uppercase tracking-widest text-[#381031] font-semibold mb-2">Mujeres</h4>
+                <p className="font-sans text-sm text-[#381031]/70">Vestido Formal</p>
               </div>
 
               {/* Hombres */}
@@ -132,13 +132,13 @@ const EventDetails: React.FC = () => {
                   <path d="M9.5 10.5l2.5-1.5 2.5 1.5" />
                   <path d="M10 11l2 2 2-2-2 6-2-6z" />
                 </svg>
-                <h4 className="font-sans text-sm uppercase tracking-widest text-[#2B1A2A] font-semibold mb-2">Hombres</h4>
-                <p className="font-sans text-sm text-[#2B1A2A]/70">Traje y corbata / moño</p>
+                <h4 className="font-sans text-sm uppercase tracking-widest text-[#381031] font-semibold mb-2">Hombres</h4>
+                <p className="font-sans text-sm text-[#381031]/70">Traje y corbata / moño</p>
               </div>
             </div>
 
             {/* COLORES PROHIBIDOS */}
-            <p className="font-sans text-base md:text-lg text-[#2B1A2A]/80 max-w-2xl mb-10 leading-relaxed font-light border-t border-[#A8ABAE]/20 pt-10">
+            <p className="font-sans text-base md:text-lg text-[#381031]/80 max-w-2xl mb-10 leading-relaxed font-light border-t border-[#A8ABAE]/20 pt-10">
               Nos sentiríamos honrados si evitaran el uso de los siguientes tonos en sus atuendos el dia del evento, ya que estarán reservados exclusivamente para la corte nupcial:
             </p>
 
@@ -147,26 +147,26 @@ const EventDetails: React.FC = () => {
               
               {/* Color: Dark Lila */}
               <div className="flex flex-col items-center">
-                <div className="w-20 h-20 bg-[#2B1A2A] rounded-full shadow-inner border border-[#A8ABAE]/20 mb-4"></div>
-                <span className="font-sans text-xs uppercase tracking-widest text-[#2B1A2A] font-medium text-center">Lila<br/>Oscuro</span>
+                <div className="w-20 h-20 bg-[#381031] rounded-full shadow-inner border border-[#A8ABAE]/20 mb-4"></div>
+                <span className="font-sans text-xs uppercase tracking-widest text-[#381031] font-medium text-center">Lila<br/>Oscuro</span>
               </div>
 
               {/* Color: Gris Perla */}
               <div className="flex flex-col items-center">
                 <div className="w-20 h-20 bg-[#A8ABAE] rounded-full shadow-inner border border-[#A8ABAE]/20 mb-4"></div>
-                <span className="font-sans text-xs uppercase tracking-widest text-[#2B1A2A] font-medium text-center">Gris<br/>Perla</span>
+                <span className="font-sans text-xs uppercase tracking-widest text-[#381031] font-medium text-center">Gris<br/>Perla</span>
               </div>
 
               {/* Color: Verde Olivo */}
               <div className="flex flex-col items-center">
                 <div className="w-20 h-20 bg-[#536332] rounded-full shadow-inner border border-[#A8ABAE]/20 mb-4"></div>
-                <span className="font-sans text-xs uppercase tracking-widest text-[#2B1A2A] font-medium text-center">Verde<br/>Olivo</span>
+                <span className="font-sans text-xs uppercase tracking-widest text-[#381031] font-medium text-center">Verde<br/>Olivo</span>
               </div>
 
               {/* Color: Blanco */}
               <div className="flex flex-col items-center">
                 <div className="w-20 h-20 bg-white rounded-full shadow-md border border-[#A8ABAE]/30 mb-4"></div>
-                <span className="font-sans text-xs uppercase tracking-widest text-[#2B1A2A] font-medium text-center">Blanco</span>
+                <span className="font-sans text-xs uppercase tracking-widest text-[#381031] font-medium text-center">Blanco</span>
               </div>
 
             </div>

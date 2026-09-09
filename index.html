@@ -1,35 +1,49 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es-MX">
   <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sofia & Alejandro | Invitación Web Interactiva de Boda</title>
-    <meta name="description" content="Invitación Web Interactiva de Boda de Sofia & Alejandro. Confirma tu asistencia y descubre todos los detalles del evento.">
-    <link rel="canonical" href="https://sofia-alejandro-boda.com/">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+
+    <!-- ⚠️ Cambia el dominio en los 5 sitios de abajo (y en public/sitemap.xml
+         y public/robots.txt) cuando tengas la URL definitiva. -->
+    <title>Drix &amp; Llely | Nos Casamos — 18 de diciembre de 2026</title>
+    <meta name="description" content="Drix y Llely nos casamos el 18 de diciembre de 2026 en el Salón Julis, Ciudad de México. Descubre todos los detalles del evento y confirma tu asistencia.">
+    <link rel="canonical" href="https://drixllely.vercel.app/">
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-    
-    <!-- Open Graph / Facebook -->
+    <meta name="theme-color" content="#381031">
+
+    <!-- Open Graph / WhatsApp / Facebook -->
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://sofia-alejandro-boda.com/">
-    <meta property="og:title" content="Sofia & Alejandro | Invitación Web Interactiva de Boda">
-    <meta property="og:description" content="Invitación Web Interactiva de Boda de Sofia & Alejandro. Confirma tu asistencia y descubre todos los detalles del evento.">
-    <meta property="og:image" content="https://sofia-alejandro-boda.com/og-image.jpg">
+    <meta property="og:locale" content="es_MX">
+    <meta property="og:site_name" content="Drix &amp; Llely">
+    <meta property="og:url" content="https://drixllely.vercel.app/">
+    <meta property="og:title" content="Drix &amp; Llely | Nos Casamos">
+    <meta property="og:description" content="18 de diciembre de 2026 · Salón Julis, CDMX. Descubre los detalles y confirma tu asistencia.">
+    <!-- Requiere public/og-image.jpg de 1200×630 px -->
+    <meta property="og:image" content="https://drixllely.vercel.app/og-image.jpg">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="Drix y Llely — invitación de boda">
 
     <!-- Twitter -->
-    <meta property="twitter:card" content="summary_large_image">
-    <meta property="twitter:url" content="https://sofia-alejandro-boda.com/">
-    <meta property="twitter:title" content="Sofia & Alejandro | Invitación Web Interactiva de Boda">
-    <meta property="twitter:description" content="Invitación Web Interactiva de Boda de Sofia & Alejandro. Confirma tu asistencia y descubre todos los detalles del evento.">
-    <meta property="twitter:image" content="https://sofia-alejandro-boda.com/og-image.jpg">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Drix &amp; Llely | Nos Casamos">
+    <meta name="twitter:description" content="18 de diciembre de 2026 · Salón Julis, CDMX. Descubre los detalles y confirma tu asistencia.">
+    <meta name="twitter:image" content="https://drixllely.vercel.app/og-image.jpg">
+
+    <!-- La invitación es personal: fuera de buscadores. -->
+    <meta name="robots" content="noindex, nofollow">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600&family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
-    
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500&family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+
     <style>
+      /* Paleta oficial: evita un destello con el color viejo antes de que
+         cargue el CSS de Tailwind. */
       body {
-        background-color: #F5F5F0;
-        color: #36454F;
+        background-color: #FCFBF5;
+        color: #381031;
       }
       .hide-scrollbar::-webkit-scrollbar {
         display: none;
@@ -44,10 +58,10 @@
     <div id="root"></div>
     <noscript>
       <main style="max-width:600px;margin:0 auto;padding:2rem;text-align:center;font-family:serif;">
-        <h1>Sofia & Alejandro — Nos Casamos</h1>
-        <p>Estás cordialmente invitado a celebrar nuestra boda. Te esperamos para compartir este día tan especial con nosotros. Por favor, habilita JavaScript para ver todos los detalles del evento, la galería de fotos, el countdown y confirmar tu asistencia.</p>
-        <p>Fecha: 2026 | Lugar: Por confirmar</p>
-        <p>Con cariño, Sofía y Alejandro.</p>
+        <h1>Drix &amp; Llely — Nos Casamos</h1>
+        <p>Estás cordialmente invitado a celebrar nuestra boda. Por favor, habilita JavaScript para ver la galería, la cuenta regresiva y confirmar tu asistencia.</p>
+        <p><strong>18 de diciembre de 2026 · 16:00 h</strong><br>Salón Julis — Eje 6 Sur Trabajadoras Sociales 1000, San Pedro, Iztapalapa, CDMX</p>
+        <p>Con cariño, Drix y Llely.</p>
       </main>
     </noscript>
     <script type="module" src="/src/main.tsx"></script>

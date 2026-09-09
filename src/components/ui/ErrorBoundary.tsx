@@ -38,23 +38,23 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
       }
 
       return (
-        <div className="min-h-screen flex items-center justify-center bg-wedding-beige p-6">
+        <div className="min-h-screen flex items-center justify-center bg-wedding-cream p-6">
           <div className="max-w-md text-center">
-            <h2 className="font-display text-3xl text-wedding-charcoal mb-4">
+            <h2 className="font-display text-3xl text-wedding-lila mb-4">
               Algo salió mal
             </h2>
-            <p className="font-sans text-wedding-charcoal/70 mb-6">
+            <p className="font-sans text-wedding-lila/70 mb-6">
               Ha ocurrido un error inesperado. Por favor, intenta recargar la página.
             </p>
             <button
               onClick={this.handleReload}
-              className="px-6 py-3 bg-wedding-olive text-white font-sans text-sm tracking-widest uppercase rounded-sm shadow-lg hover:shadow-xl transition-all duration-300 hover:opacity-90"
+              className="px-6 py-3 bg-wedding-olive text-wedding-cream font-sans text-sm tracking-widest uppercase rounded-sm shadow-lg hover:shadow-xl transition-all duration-300 hover:opacity-90"
             >
               Recargar Página
             </button>
             {import.meta.env.DEV && this.state.error && (
               <details className="mt-6 text-left">
-                <summary className="cursor-pointer text-sm text-wedding-charcoal/50">
+                <summary className="cursor-pointer text-sm text-wedding-lila/50">
                   Detalles del error (solo desarrollo)
                 </summary>
                 <pre className="mt-2 p-3 bg-red-50 rounded text-xs text-red-800 overflow-auto max-h-40">

@@ -4,7 +4,7 @@ import { WEDDING_DATE } from '@/constants';
 import { motion } from 'framer-motion';
 
 // --- PALETA OFICIAL DE LA BODA ---
-// Dark Lila: #2B1A2A
+// Dark Lila: #381031
 // Gris Perla: #A8ABAE
 // Verde Olivo: #536332
 // Blanco: #FCFBF5
@@ -12,7 +12,7 @@ import { motion } from 'framer-motion';
 const TimeUnit = ({ value, label, showSeparator = true }: { value: number; label: string; showSeparator?: boolean }) => (
   <div className="flex items-center">
     <div className="flex flex-col items-center">
-      <span className="font-display text-4xl sm:text-5xl md:text-7xl lg:text-[6rem] text-[#2B1A2A] leading-none tracking-tighter">
+      <span className="font-display text-4xl sm:text-5xl md:text-7xl lg:text-[6rem] text-[#381031] leading-none tracking-tighter">
         {String(value).padStart(2, '0')}
       </span>
       <span className="font-sans text-[9px] sm:text-[10px] md:text-xs text-[#536332] tracking-[0.4em] uppercase mt-4 sm:mt-6 font-medium">
@@ -56,7 +56,7 @@ const Countdown: React.FC = () => {
               whileInView={{ y: 0 }}
               transition={{ duration: 1, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
               viewport={{ once: true }}
-              className="font-serif italic text-2xl sm:text-3xl md:text-4xl text-[#2B1A2A]/80 font-light"
+              className="font-serif italic text-2xl sm:text-3xl md:text-4xl text-[#381031]/80 font-light"
             >
               La espera casi termina
             </motion.h3>

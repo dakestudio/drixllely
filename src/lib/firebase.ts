@@ -1,14 +1,4 @@
-import { initializeApp } from 'firebase/app';
-import { 
-  getFirestore, 
-  doc, 
-  getDoc, 
-  updateDoc,
-  collection,
-  getDocs,
-  setDoc,
-  deleteDoc
-} from 'firebase/firestore';
+import type { Firestore } from 'firebase/firestore';
 import type { Invitado } from '@/types';
 
 const firebaseConfig = {
@@ -20,39 +10,67 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+export const isFirebaseConfigured = Boolean(
+  firebaseConfig.apiKey && firebaseConfig.projectId
+);
 
-// ─── RSVP Functions ───────────────────────────────────────
+/**
+ * The Firebase SDK is ~86 kB gzipped — a third of the whole bundle. Loading it
+ * lazily keeps it out of the critical path: it only arrives when a guest opens
+ * a personal RSVP link (?invite=…) or the admin panel.
+ */
+let dbPromise: Promise<Firestore> | null = null;
 
-/** Fetch an invitado by their unique invite code */
-export async function getInvitado(code: string): Promise<Invitado | null> {
-  try {
-    const docRef = doc(db, 'invitados', code);
-    const docSnap = await getDoc(docRef);
-    if (docSnap.exists()) {
-      return { id: docSnap.id, ...docSnap.data() } as Invitado;
-    }
-    return null;
-  } catch (error) {
-    console.error('Error fetching invitado:', error);
-    return null;
+const getDb = (): Promise<Firestore> => {
+  dbPromise ??= (async () => {
+    const [{ initializeApp }, { getFirestore }] = await Promise.all([
+      import('firebase/app'),
+      import('firebase/firestore'),
+    ]);
+    return getFirestore(initializeApp(firebaseConfig));
+  })();
+  return dbPromise;
+};
+
+/** Thrown when Firestore is unreachable, so callers can tell it apart from "not found". */
+export class FirebaseUnavailableError extends Error {
+  constructor(cause?: unknown) {
+    super('No se pudo conectar con la base de datos');
+    this.name = 'FirebaseUnavailableError';
+    this.cause = cause;
   }
 }
 
-/** Update RSVP response for an invitado */
-export async function updateRSVP(code: string, data: Partial<Invitado>): Promise<boolean> {
+// ─── RSVP Functions ───────────────────────────────────────
+
+/**
+ * Fetch an invitado by their unique invite code.
+ * Returns null when the code genuinely does not exist; throws
+ * FirebaseUnavailableError when the lookup itself failed.
+ */
+export async function getInvitado(code: string): Promise<Invitado | null> {
   try {
-    const docRef = doc(db, 'invitados', code);
-    await updateDoc(docRef, {
+    const { doc, getDoc } = await import('firebase/firestore');
+    const snap = await getDoc(doc(await getDb(), 'invitados', code));
+    return snap.exists() ? ({ id: snap.id, ...snap.data() } as Invitado) : null;
+  } catch (error) {
+    console.error('Error fetching invitado:', error);
+    throw new FirebaseUnavailableError(error);
+  }
+}
+
+/** Update RSVP response for an invitado. Throws if the write did not land. */
+export async function updateRSVP(code: string, data: Partial<Invitado>): Promise<void> {
+  try {
+    const { doc, updateDoc } = await import('firebase/firestore');
+    await updateDoc(doc(await getDb(), 'invitados', code), {
       ...data,
       confirmado: true,
       fechaConfirmacion: new Date().toISOString(),
     });
-    return true;
   } catch (error) {
     console.error('Error updating RSVP:', error);
-    return false;
+    throw new FirebaseUnavailableError(error);
   }
 }
 
@@ -61,11 +79,9 @@ export async function updateRSVP(code: string, data: Partial<Invitado>): Promise
 /** Get all invitados */
 export async function getAllInvitados(): Promise<Invitado[]> {
   try {
-    const querySnapshot = await getDocs(collection(db, 'invitados'));
-    return querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-    })) as Invitado[];
+    const { collection, getDocs } = await import('firebase/firestore');
+    const snap = await getDocs(collection(await getDb(), 'invitados'));
+    return snap.docs.map(d => ({ id: d.id, ...d.data() })) as Invitado[];
   } catch (error) {
     console.error('Error fetching all invitados:', error);
     return [];
@@ -75,7 +91,8 @@ export async function getAllInvitados(): Promise<Invitado[]> {
 /** Create a new invitado */
 export async function createInvitado(code: string, data: Omit<Invitado, 'id'>): Promise<boolean> {
   try {
-    await setDoc(doc(db, 'invitados', code), data);
+    const { doc, setDoc } = await import('firebase/firestore');
+    await setDoc(doc(await getDb(), 'invitados', code), data);
     return true;
   } catch (error) {
     console.error('Error creating invitado:', error);
@@ -86,7 +103,8 @@ export async function createInvitado(code: string, data: Omit<Invitado, 'id'>): 
 /** Update an invitado (Admin) */
 export async function updateInvitadoAdmin(code: string, data: Partial<Invitado>): Promise<boolean> {
   try {
-    await updateDoc(doc(db, 'invitados', code), data);
+    const { doc, updateDoc } = await import('firebase/firestore');
+    await updateDoc(doc(await getDb(), 'invitados', code), data);
     return true;
   } catch (error) {
     console.error('Error updating invitado (Admin):', error);
@@ -97,12 +115,11 @@ export async function updateInvitadoAdmin(code: string, data: Partial<Invitado>)
 /** Delete an invitado */
 export async function deleteInvitado(code: string): Promise<boolean> {
   try {
-    await deleteDoc(doc(db, 'invitados', code));
+    const { doc, deleteDoc } = await import('firebase/firestore');
+    await deleteDoc(doc(await getDb(), 'invitados', code));
     return true;
   } catch (error) {
     console.error('Error deleting invitado:', error);
     return false;
   }
 }
-
-export { db };

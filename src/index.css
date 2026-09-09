@@ -1,13 +1,14 @@
 @import "tailwindcss";
 
 @theme {
-  /* Wedding Colors */
-  --color-wedding-beige: #F5F5F0;
-  --color-wedding-gold: #D4AF37;
-  --color-wedding-olive: #556B2F;
-  --color-wedding-charcoal: #36454F;
-  --color-wedding-rose: #E6D7D5;
-  --color-wedding-sand: #E8E6E1;
+  /* ── PALETA OFICIAL DE LA BODA ──────────────────────────
+     Única fuente de verdad. Tailwind 4 lee este bloque, no
+     tailwind.config.js (ese archivo se eliminó: tenía la
+     paleta antigua y no lo usaba nadie).                    */
+  --color-wedding-lila: #381031;   /* Lila oscuro — textos y fondos oscuros */
+  --color-wedding-pearl: #A8ABAE;  /* Gris perla — textos secundarios y bordes */
+  --color-wedding-olive: #536332;  /* Verde olivo — acentos y llamadas a la acción */
+  --color-wedding-cream: #FCFBF5;  /* Blanco roto — fondo principal */
 
   /* Font Families */
   --font-serif: "Playfair Display", serif;
@@ -19,26 +20,58 @@
   html {
     scroll-behavior: smooth;
     overflow-x: hidden;
+    /* Evita que iOS agrande el texto al girar el teléfono a horizontal. */
+    -webkit-text-size-adjust: 100%;
   }
 
   body {
-    @apply antialiased text-wedding-charcoal bg-wedding-beige;
+    @apply antialiased text-wedding-lila bg-wedding-cream;
     overflow-x: hidden;
   }
 
-  /* Elegant scrollbar */
+  /* Respeta el ajuste de accesibilidad "reducir movimiento" del sistema.
+     framer-motion ya lo respeta vía <MotionConfig reducedMotion="user">;
+     esto cubre las animaciones y transiciones puramente CSS. */
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  /* Anillo de foco visible y coherente para navegación por teclado. */
+  :focus-visible {
+    outline: 2px solid var(--color-wedding-olive);
+    outline-offset: 2px;
+  }
+
+  /* Elegant scrollbar — Chrome, Edge, Safari */
   ::-webkit-scrollbar {
-    width: 6px;
+    width: 10px;
   }
   ::-webkit-scrollbar-track {
-    background: #F5F5F0;
+    background: var(--color-wedding-cream);
   }
   ::-webkit-scrollbar-thumb {
-    background: #D4AF37;
-    border-radius: 3px;
+    background: var(--color-wedding-olive);
+    border-radius: 5px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: #B8962E;
+    background: #3F4C26; /* olivo un punto más oscuro */
+  }
+
+  /* Firefox no entiende ::-webkit-scrollbar: usa estas dos propiedades. */
+  html {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-wedding-olive) var(--color-wedding-cream);
   }
 }
 

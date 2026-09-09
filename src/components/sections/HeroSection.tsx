@@ -1,36 +1,62 @@
-import React from 'react';
-import { motion, useScroll, useTransform } from 'framer-motion';
+import React, { useRef } from 'react';
+import { motion, useScroll, useTransform, useInView } from 'framer-motion';
 import { COUPLE_NAMES, WEDDING_DATE } from '@/constants';
+import { useIsDesktop } from '@/hooks';
 import { ArrowDown } from 'lucide-react';
-import fotoFondo from '@/assets/gallery/herofotodrixllely.jpg';
+import fotoFondo from '@/assets/gallery/herofotodrixllely.webp';
 
 // --- PALETA OFICIAL DE LA BODA ---
-// Dark Lila: #2B1A2A
+// Dark Lila: #381031
 // Gris Perla: #A8ABAE
 // Verde Olivo: #536332
 // Blanco: #FCFBF5
 
+// Relación de aspecto de la foto de portada. Reservar la caja antes de que el
+// archivo llegue evita el salto de layout (CLS) al cargar.
+const HERO_WIDTH = 1920;
+const HERO_HEIGHT = 1072;
+
 const HeroSection: React.FC = () => {
+  const sectionRef = useRef<HTMLElement>(null);
+  const isDesktop = useIsDesktop();
+  const isVisible = useInView(sectionRef);
+
   const date = new Date(WEDDING_DATE);
-  const formattedDate = date.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
+  const formattedDate = date.toLocaleDateString('es-MX', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    timeZone: 'America/Mexico_City',
+  });
 
   const { scrollY } = useScroll();
-  const bgY = useTransform(scrollY, [0, 800], [0, 200]);
-  const textY = useTransform(scrollY, [0, 800], [0, -80]);
+  const bgY = useTransform(scrollY, [0, 800], isDesktop ? [0, 200] : [0, 0]);
+  const textY = useTransform(scrollY, [0, 800], isDesktop ? [0, -80] : [0, 0]);
   const opacity = useTransform(scrollY, [0, 600], [1, 0]);
 
   return (
-    <section className="relative h-screen w-full overflow-hidden flex items-center justify-center bg-[#2B1A2A]">
+    <section
+      ref={sectionRef}
+      /* 100svh en lugar de 100vh: en Safari iOS `vh` incluye la barra de
+         direcciones, así que la flecha quedaba tapada y la sección saltaba
+         al colapsarse la barra. */
+      className="relative h-[100svh] w-full overflow-hidden flex items-center justify-center bg-[#381031]"
+    >
       {/* Background Image with Parallax */}
       <motion.div className="absolute inset-0 z-0" style={{ y: bgY }}>
-        <img 
-          src={fotoFondo} 
-          alt="Wedding Background" 
+        <img
+          src={fotoFondo}
+          alt=""
+          aria-hidden="true"
+          width={HERO_WIDTH}
+          height={HERO_HEIGHT}
           className="w-full h-[120%] object-cover opacity-75"
           loading="eager"
+          fetchPriority="high"
+          decoding="async"
         />
         {/* Gradient overlay estilizado con Dark Lila */}
-        <div className="absolute inset-0 bg-gradient-to-b from-[#2B1A2A]/40 via-[#2B1A2A]/60 to-[#2B1A2A]/90" />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#381031]/40 via-[#381031]/60 to-[#381031]/90" />
       </motion.div>
 
       {/* Content with parallax */}
@@ -77,14 +103,14 @@ const HeroSection: React.FC = () => {
               {COUPLE_NAMES.groom}
             </motion.span>
           </h1>
-          
+
           <motion.div
             initial={{ width: 0 }}
             animate={{ width: '6rem' }}
             transition={{ duration: 1, delay: 1.2 }}
             className="h-px bg-[#536332] mx-auto mb-6 opacity-80"
           />
-          
+
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -96,11 +122,12 @@ const HeroSection: React.FC = () => {
         </motion.div>
       </motion.div>
 
-      {/* Scroll Indicator */}
+      {/* Scroll Indicator — se detiene cuando el hero sale de pantalla */}
       <motion.div
-        className="absolute bottom-10 left-1/2 transform -translate-x-1/2 text-[#A8ABAE]/80"
-        animate={{ y: [0, 8, 0] }}
-        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+        className="absolute bottom-10 left-1/2 -translate-x-1/2 text-[#A8ABAE]/80"
+        animate={isVisible ? { y: [0, 8, 0] } : { y: 0 }}
+        transition={{ duration: 2, repeat: isVisible ? Infinity : 0, ease: "easeInOut" }}
+        aria-hidden="true"
       >
         <ArrowDown size={24} strokeWidth={1.5} className="text-[#536332]" />
       </motion.div>

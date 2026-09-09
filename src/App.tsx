@@ -7,7 +7,6 @@ import { ErrorBoundary, LoadingSpinner, MusicPlayer, SectionDivider } from '@/co
 const WelcomeScreen = React.lazy(() => import('@/components/sections/WelcomeScreen'));
 const HeroSection = React.lazy(() => import('@/components/sections/HeroSection'));
 const Countdown = React.lazy(() => import('@/components/sections/Countdown'));
-// Historia eliminada por completo
 const Gallery = React.lazy(() => import('@/components/sections/Gallery'));
 const EventDetails = React.lazy(() => import('@/components/sections/EventDetails'));
 const RSVPForm = React.lazy(() => import('@/components/sections/RSVPForm'));
@@ -15,50 +14,57 @@ const GiftSection = React.lazy(() => import('@/components/sections/GiftSection')
 const FinalMessage = React.lazy(() => import('@/components/sections/FinalMessage'));
 const AdminPanel = React.lazy(() => import('@/components/admin/AdminPanel'));
 
-// Wedding Invitation Page
-const WeddingPage = () => (
+/** Colores de fondo reales de cada sección — los divisores deben usarlos
+ *  literalmente o se dibuja una banda de otro color entre secciones. */
+const DARK = '#381031';  // Hero y FinalMessage
+const CREAM = '#FCFBF5'; // Todas las secciones intermedias
+
+/* El hero ocupa la pantalla completa mientras carga, así no hay salto
+   de layout cuando aparece. */
+const HeroFallback = () => (
+  <div className="h-[100svh] w-full bg-[#381031]" aria-hidden="true" />
+);
+
+const Wedding = () => (
   <WeddingProvider>
-    <main className="w-full min-h-screen relative font-sans text-wedding-charcoal selection:bg-wedding-gold selection:text-white">
+    <main className="w-full min-h-screen relative font-sans text-wedding-lila selection:bg-wedding-olive selection:text-wedding-cream">
       <React.Suspense fallback={<LoadingSpinner />}>
         <WelcomeScreen />
       </React.Suspense>
       <MusicPlayer />
 
-      {/* Main Content */}
-      <React.Suspense fallback={<div className="h-screen flex items-center justify-center">Cargando...</div>}>
-        
+      {/* El hero tiene su propio límite de Suspense para pintar en cuanto
+          llega su chunk, sin esperar al resto de las secciones. */}
+      <React.Suspense fallback={<HeroFallback />}>
         <HeroSection />
+      </React.Suspense>
 
-        {/* Hero → Countdown: oscuro a beige */}
-        <SectionDivider variant="elegant" fillTop="#2B1A2A" fillBottom="#FFFF" />
+      <React.Suspense fallback={null}>
+        {/* Hero (oscuro) → Countdown (crema) */}
+        <SectionDivider variant="elegant" fillTop={DARK} fillBottom={CREAM} />
 
         <Countdown />
 
-        {/* Countdown → Galería: beige a blanco (Este es el filtro exacto que tenía la Historia) */}
-        <SectionDivider variant="wave" fillTop="#A8ABAE" fillBottom="#FFFFFF" />
+        <SectionDivider variant="wave" fillTop={CREAM} fillBottom={CREAM} />
 
         <Gallery />
 
-        {/* Galería → Detalles del evento: blanco a beige */}
-        <SectionDivider variant="curve" fillTop="#FFFFFF" fillBottom="#A8ABAE" />
+        <SectionDivider variant="curve" fillTop={CREAM} fillBottom={CREAM} />
 
         <EventDetails />
 
-        {/* Detalles del evento → Regalos: beige con beige */}
-        <SectionDivider variant="elegant" fillTop="#A8ABAE" fillBottom="#F5F5F0" />
+        <SectionDivider variant="elegant" fillTop={CREAM} fillBottom={CREAM} />
 
         <GiftSection />
 
-        {/* Regalos → Confirmar asistencia (RSVP): pasa de beige a blanco */}
-        <SectionDivider variant="curve" fillTop="#A8ABAE" fillBottom="#FFFFFF" />
+        <SectionDivider variant="curve" fillTop={CREAM} fillBottom={CREAM} />
 
         <RSVPForm />
 
-        {/* RSVP → Mensaje Final: pasa de blanco a oscuro */}
-        <SectionDivider variant="elegant" fillTop="#FFFFFF" fillBottom="#2B1A2A" />
+        {/* RSVP (crema) → Mensaje final (oscuro) */}
+        <SectionDivider variant="elegant" fillTop={CREAM} fillBottom={DARK} />
 
         <FinalMessage />
-
       </React.Suspense>
     </main>
   </WeddingProvider>
@@ -69,12 +75,15 @@ function App() {
     <ErrorBoundary>
       <BrowserRouter>
         <Routes>
-          <Route path="/admin" element={
-            <React.Suspense fallback={<div className="h-screen flex items-center justify-center">Cargando...</div>}>
-              <AdminPanel />
-            </React.Suspense>
-          } />
-          <Route path="*" element={<WeddingPage />} />
+          <Route
+            path="/admin"
+            element={
+              <React.Suspense fallback={<LoadingSpinner />}>
+                <AdminPanel />
+              </React.Suspense>
+            }
+          />
+          <Route path="*" element={<Wedding />} />
         </Routes>
       </BrowserRouter>
     </ErrorBoundary>

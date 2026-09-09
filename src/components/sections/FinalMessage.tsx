@@ -1,39 +1,50 @@
 import React, { useRef } from 'react';
-import { motion, useScroll, useTransform } from 'framer-motion';
+import { motion, useScroll, useTransform, useInView } from 'framer-motion';
 import { COUPLE_NAMES } from '@/constants';
+import { useIsDesktop } from '@/hooks';
 import { DividerOrnament } from '@/components/ui/WeddingOrnaments';
 
 // Importamos la imagen directamente desde la carpeta assets
-import fotoFinalImg from '@/assets/gallery/fotofinal.jpg';
+import fotoFinalImg from '@/assets/gallery/fotofinal.webp';
 
 // --- PALETA OFICIAL DE LA BODA ---
-// Dark Lila: #2B1A2A
+// Dark Lila: #381031
 // Gris Perla: #A8ABAE
 // Verde Olivo: #536332
 // Blanco: #FCFBF5
 
 const FinalMessage: React.FC = () => {
   const sectionRef = useRef<HTMLElement>(null);
+  const isDesktop = useIsDesktop();
+  const isVisible = useInView(sectionRef);
 
   const { scrollYProgress } = useScroll({
     target: sectionRef,
     offset: ["start end", "end start"]
   });
 
-  const bgY = useTransform(scrollYProgress, [0, 1], ['-10%', '10%']);
+  const bgY = useTransform(
+    scrollYProgress,
+    [0, 1],
+    isDesktop ? ['-10%', '10%'] : ['0%', '0%']
+  );
 
   return (
-    <footer ref={sectionRef} className="relative pt-24 pb-40 md:pt-32 md:pb-56 flex flex-col items-center justify-center text-[#FCFBF5] overflow-hidden text-center bg-[#2B1A2A]">
+    <footer ref={sectionRef} className="relative pt-24 pb-40 md:pt-32 md:pb-56 flex flex-col items-center justify-center text-[#FCFBF5] overflow-hidden text-center bg-[#381031]">
       {/* Background Image with Parallax */}
       <motion.div className="absolute inset-0 z-0" style={{ y: bgY }}>
-        <img 
-          src={fotoFinalImg} 
-          alt="Fotografía final de los novios" 
-          className="w-full h-[120%] object-cover opacity-60 grayscale-[10%]" 
+        <img
+          src={fotoFinalImg}
+          alt=""
+          aria-hidden="true"
+          width={1045}
+          height={1400}
+          className="w-full h-[120%] object-cover opacity-60 grayscale-[10%]"
           loading="lazy"
+          decoding="async"
         />
         {/* Gradient overlay - Dark Lila cinematográfico */}
-        <div className="absolute top-0 left-0 w-full h-[120%] bg-gradient-to-t from-[#2B1A2A] via-[#2B1A2A]/70 to-[#2B1A2A]/40" />
+        <div className="absolute top-0 left-0 w-full h-[120%] bg-gradient-to-t from-[#381031] via-[#381031]/70 to-[#381031]/40" />
       </motion.div>
 
       <div className="relative z-10 px-6 max-w-4xl mx-auto flex flex-col items-center">
@@ -110,9 +121,9 @@ const FinalMessage: React.FC = () => {
         viewport={{ once: true }}
         className="absolute bottom-6 w-full text-center text-[#A8ABAE] text-xs font-sans z-10 tracking-[0.2em] uppercase font-light"
       >
-        Hecho con <motion.span 
-          animate={{ scale: [1, 1.25, 1] }} 
-          transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }} 
+        Hecho con <motion.span
+          animate={isVisible ? { scale: [1, 1.25, 1] } : { scale: 1 }}
+          transition={{ repeat: isVisible ? Infinity : 0, duration: 1.5, ease: "easeInOut" }}
           className="inline-block text-[#536332] mx-1"
         >♥</motion.span> para nuestra boda
       </motion.div>

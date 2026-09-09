@@ -1,15 +1,22 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useWedding } from '@/context';
-import { COUPLE_NAMES } from '@/constants';
-import GoldenParticles from '@/components/ui/GoldenParticles';
+import { COUPLE_NAMES, WEDDING_DATE } from '@/constants';
+import FloatingParticles from '@/components/ui/FloatingParticles';
 import { CornerOrnament } from '@/components/ui/WeddingOrnaments';
 
 // --- PALETA OFICIAL DE LA BODA ---
-// Dark Lila: #2B1A2A
+// Dark Lila: #381031
 // Gris Perla: #A8ABAE
 // Verde Olivo: #536332
 // Blanco: #FCFBF5
+
+const WEDDING_DATE_LABEL = new Date(WEDDING_DATE).toLocaleDateString('es-MX', {
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+  timeZone: 'America/Mexico_City',
+});
 
 const WelcomeScreen: React.FC = () => {
   const { isEntered, enterSite } = useWedding();
@@ -25,15 +32,17 @@ const WelcomeScreen: React.FC = () => {
             filter: 'blur(20px)',
             transition: { duration: 1.6, ease: [0.76, 0, 0.24, 1] } 
           }}
+          /* El scroll ya lo bloquea WeddingProvider fijando el <body>.
+             Un onTouchMove con preventDefault aquí no haría nada: React
+             registra touchmove como listener pasivo. */
           className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-[#FCFBF5]"
-          onTouchMove={(e) => e.preventDefault()}
         >
           {/* Sombra sutil de fondo en los bordes para dar profundidad */}
-          <div className="absolute inset-0 bg-radial-[at_center] from-transparent to-[#2B1A2A]/5 pointer-events-none" />
+          <div className="absolute inset-0 bg-radial-[at_center] from-transparent to-[#381031]/5 pointer-events-none" />
 
           {/* Partículas Flotantes */}
           <div className="absolute inset-0 opacity-30 pointer-events-none">
-             <GoldenParticles />
+             <FloatingParticles />
           </div>
 
           {/* Marco Fino Minimalista con tus Ornametos */}
@@ -73,7 +82,7 @@ const WelcomeScreen: React.FC = () => {
                   initial={{ opacity: 0, y: 30 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.8, duration: 1.5, ease: [0.16, 1, 0.3, 1] }}
-                  className="font-display text-6xl sm:text-8xl md:text-9xl lg:text-[11rem] text-[#2B1A2A] leading-[0.8] tracking-tight relative z-20 text-center"
+                  className="font-display text-6xl sm:text-8xl md:text-9xl lg:text-[11rem] text-[#381031] leading-[0.8] tracking-tight relative z-20 text-center"
                 >
                   {COUPLE_NAMES.bride.toUpperCase()}
                 </motion.h1>
@@ -92,7 +101,7 @@ const WelcomeScreen: React.FC = () => {
                   initial={{ opacity: 0, y: -30 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 1.0, duration: 1.5, ease: [0.16, 1, 0.3, 1] }}
-                  className="font-display text-6xl sm:text-8xl md:text-9xl lg:text-[11rem] text-[#2B1A2A] leading-[0.8] tracking-tight relative z-20 mt-4 sm:mt-8 text-center"
+                  className="font-display text-6xl sm:text-8xl md:text-9xl lg:text-[11rem] text-[#381031] leading-[0.8] tracking-tight relative z-20 mt-4 sm:mt-8 text-center"
                 >
                   {COUPLE_NAMES.groom.toUpperCase()}
                 </motion.h1>
@@ -105,9 +114,9 @@ const WelcomeScreen: React.FC = () => {
                   initial={{ y: 30, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ delay: 1.5, duration: 1.2, ease: [0.33, 1, 0.68, 1] }}
-                  className="font-serif italic text-xl md:text-2xl text-[#2B1A2A]/80 tracking-wide"
+                  className="font-serif italic text-xl md:text-2xl text-[#381031]/80 tracking-wide capitalize"
                 >
-                  18 de Diciembre, 2026
+                  {WEDDING_DATE_LABEL}
                 </motion.p>
               </div>
 
@@ -119,8 +128,10 @@ const WelcomeScreen: React.FC = () => {
                 className="mt-4"
               >
                 <button
+                  type="button"
                   onClick={enterSite}
-                  className="group relative flex items-center justify-center h-28 w-28 sm:h-36 sm:w-36 rounded-full border border-[#536332]/40 hover:border-[#536332] transition-colors duration-700 overflow-hidden"
+                  aria-label="Descubrir invitación"
+                  className="group relative flex items-center justify-center h-28 w-28 sm:h-36 sm:w-36 rounded-full border border-[#536332]/40 hover:border-[#536332] transition-colors duration-700 overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-[#536332] focus-visible:ring-offset-4 focus-visible:ring-offset-[#FCFBF5]"
                 >
                   {/* Animación de pulso continuo */}
                   <motion.div 

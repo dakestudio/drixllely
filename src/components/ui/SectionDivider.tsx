@@ -17,8 +17,8 @@ const paths: Record<DividerVariant, string> = {
 
 const SectionDivider: React.FC<SectionDividerProps> = ({
   variant = 'wave',
-  fillTop = '#FFFFFF',
-  fillBottom = '#E8E6E1',
+  fillTop = '#FCFBF5',
+  fillBottom = '#FCFBF5',
   flip = false,
 }) => {
   return (
