@@ -432,7 +432,7 @@ const RSVPForm: React.FC = () => {
                 {/* Restricciones Alimenticias */}
                 <div className="flex flex-col">
                   <label className="font-sans text-xs uppercase tracking-[0.2em] text-wedding-pearl mb-4">
-                    ¿Alguien tiene restricciones alimenticias o alergias?
+                    ¿Alguien tiene restricciones alimenticias o alergias? <span className="normal-case text-wedding-pearl/70">(opcional)</span>
                   </label>
                   <div className="flex gap-4">
                     <button

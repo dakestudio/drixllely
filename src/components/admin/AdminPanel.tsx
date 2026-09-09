@@ -65,7 +65,9 @@ const AdminPanel: React.FC = () => {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   
   const [currentPage, setCurrentPage] = useState(1);
-  const ITEMS_PER_PAGE = 10;
+  // Con ~250 invitaciones, 10 por página daban 25 páginas de clics. Con 30
+  // la tabla sigue siendo escaneable y quedan muchas menos páginas.
+  const ITEMS_PER_PAGE = 30;
 
   // Firebase Auth es ahora la fuente de verdad de la sesión. Ya no hay
   // contraseña en el código ni bandera en sessionStorage: ambas se podían
@@ -293,6 +295,26 @@ const AdminPanel: React.FC = () => {
     const start = (currentPage - 1) * ITEMS_PER_PAGE;
     return filteredInvitados.slice(start, start + ITEMS_PER_PAGE);
   }, [filteredInvitados, currentPage]);
+
+  /* Restricciones SOLO de quienes asisten: la alergia de alguien que no viene
+     es ruido para el salón. Esta es la lista que se le pasa al banquete. */
+  const restricciones = useMemo(
+    () =>
+      invitados
+        .filter(i => i.asistira === 'yes' && i.restricciones?.trim())
+        .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es')),
+    [invitados]
+  );
+
+  /* Solo los invitados que dejaron mensaje, más recientes primero.
+     No usa el filtro de la tabla: el muro se lee entero, siempre. */
+  const mensajes = useMemo(
+    () =>
+      invitados
+        .filter(i => i.mensaje?.trim())
+        .sort((a, b) => (b.fechaConfirmacion || '').localeCompare(a.fechaConfirmacion || '')),
+    [invitados]
+  );
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -769,6 +791,92 @@ const AdminPanel: React.FC = () => {
             )}
           </div>
         )}
+
+        {/* ── Muro de mensajes ──────────────────────────────
+            Sale gratis: los datos ya vienen en `invitados`, así que no
+            cuesta ninguna lectura extra de Firestore. Antes había que abrir
+            la ficha de cada invitado para leer su mensaje. */}
+        {mensajes.length > 0 && (
+          <section className="mt-8">
+            <div className="flex items-center gap-3 mb-5">
+              <MessageSquare className="w-4 h-4 text-wedding-olive" />
+              <h2 className="font-display text-lg text-wedding-lila">Mensajes de sus invitados</h2>
+              <span className="text-xs text-wedding-pearl">
+                {mensajes.length} {mensajes.length === 1 ? 'mensaje' : 'mensajes'}
+              </span>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {mensajes.map(inv => (
+                <figure
+                  key={inv.id}
+                  className="bg-white border border-wedding-pearl/40 rounded-lg p-5 shadow-sm flex flex-col justify-between"
+                >
+                  <blockquote className="font-serif italic text-wedding-lila/80 leading-relaxed text-sm">
+                    “{inv.mensaje}”
+                  </blockquote>
+                  <figcaption className="mt-4 pt-3 border-t border-wedding-pearl/25 flex items-center justify-between gap-2">
+                    <span className="text-xs font-medium text-wedding-lila">{inv.nombre}</span>
+                    <span
+                      className={`text-[10px] uppercase tracking-widest shrink-0 ${
+                        inv.asistira === 'yes' ? 'text-emerald-700'
+                        : inv.asistira === 'no' ? 'text-red-500'
+                        : 'text-wedding-pearl'
+                      }`}
+                    >
+                      {inv.asistira === 'yes' ? 'Asiste' : inv.asistira === 'no' ? 'No asiste' : 'Pendiente'}
+                    </span>
+                  </figcaption>
+                </figure>
+              ))}
+            </div>
+          </section>
+        )}
+        {/* ── Restricciones alimenticias ────────────────────
+            Lista operativa: es la que se le entrega al salón. Por eso muestra
+            cuántas personas cubre cada invitación y se puede copiar entera. */}
+        {restricciones.length > 0 && (
+          <section className="mt-8">
+            <div className="flex flex-wrap items-center gap-3 mb-5">
+              <AlertTriangle className="w-4 h-4 text-amber-500" />
+              <h2 className="font-display text-lg text-wedding-lila">Restricciones alimenticias</h2>
+              <span className="text-xs text-wedding-pearl">
+                {restricciones.length} {restricciones.length === 1 ? 'invitación' : 'invitaciones'}
+                {' · '}
+                {restricciones.reduce((n, i) => n + (i.numInvitados || 0), 0)} personas
+              </span>
+              <button
+                onClick={() => {
+                  const texto = restricciones
+                    .map(i => `${i.nombre} (${i.numInvitados} pers.): ${i.restricciones}`)
+                    .join('\n');
+                  navigator.clipboard.writeText(texto).then(
+                    () => setToast('Lista copiada — lista para enviar al salón'),
+                    () => setToast('No se pudo copiar')
+                  );
+                }}
+                className="ml-auto flex items-center gap-2 px-4 py-2 border border-wedding-pearl/40 rounded-lg text-xs text-wedding-lila/70 hover:bg-white transition-all"
+              >
+                <Copy className="w-3.5 h-3.5" /> Copiar lista
+              </button>
+            </div>
+
+            <div className="bg-white border border-wedding-pearl/40 rounded-lg divide-y divide-wedding-pearl/25 shadow-sm">
+              {restricciones.map(inv => (
+                <div key={inv.id} className="p-5 flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-5">
+                  <div className="sm:w-56 shrink-0">
+                    <p className="text-sm font-medium text-wedding-lila">{inv.nombre}</p>
+                    <p className="text-[10px] uppercase tracking-widest text-wedding-pearl mt-0.5">
+                      {inv.numInvitados} {inv.numInvitados === 1 ? 'persona' : 'personas'}
+                    </p>
+                  </div>
+                  <p className="text-sm text-wedding-lila/80 leading-relaxed flex-1">{inv.restricciones}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
       </main>
 
       {/* Modal Advertencia Reducción Pases */}
