@@ -7,11 +7,8 @@ import { DividerOrnament } from '@/components/ui/WeddingOrnaments';
 // Importamos la imagen directamente desde la carpeta assets
 import fotoFinalImg from '@/assets/gallery/fotofinal.webp';
 
-// --- PALETA OFICIAL DE LA BODA ---
-// Dark Lila: #381031
-// Gris Perla: #A8ABAE
-// Verde Olivo: #536332
-// Blanco: #FCFBF5
+// Paleta: usa los tokens wedding-lila / -pearl / -olive / -cream.
+// Se definen en el bloque @theme de src/index.css (fuente unica).
 
 const FinalMessage: React.FC = () => {
   const sectionRef = useRef<HTMLElement>(null);
@@ -30,7 +27,7 @@ const FinalMessage: React.FC = () => {
   );
 
   return (
-    <footer ref={sectionRef} className="relative pt-24 pb-40 md:pt-32 md:pb-56 flex flex-col items-center justify-center text-[#FCFBF5] overflow-hidden text-center bg-[#381031]">
+    <footer ref={sectionRef} className="relative pt-24 pb-40 md:pt-32 md:pb-56 flex flex-col items-center justify-center text-wedding-cream overflow-hidden text-center bg-wedding-lila">
       {/* Background Image with Parallax */}
       <motion.div className="absolute inset-0 z-0" style={{ y: bgY }}>
         <img
@@ -44,13 +41,13 @@ const FinalMessage: React.FC = () => {
           decoding="async"
         />
         {/* Gradient overlay - Dark Lila cinematográfico */}
-        <div className="absolute top-0 left-0 w-full h-[120%] bg-gradient-to-t from-[#381031] via-[#381031]/70 to-[#381031]/40" />
+        <div className="absolute top-0 left-0 w-full h-[120%] bg-gradient-to-t from-wedding-lila via-wedding-lila/70 to-wedding-lila/40" />
       </motion.div>
 
       <div className="relative z-10 px-6 max-w-4xl mx-auto flex flex-col items-center">
         
         {/* Poema/Mensaje Emotivo */}
-        <div className="mb-12 md:mb-16 text-[#FCFBF5]/95 leading-relaxed font-serif italic text-lg sm:text-xl md:text-3xl lg:text-4xl text-center max-w-2xl">
+        <div className="mb-12 md:mb-16 text-wedding-cream/95 leading-relaxed font-serif italic text-lg sm:text-xl md:text-3xl lg:text-4xl text-center max-w-2xl">
           <motion.span
             initial={{ opacity: 0, y: 15 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -77,7 +74,7 @@ const FinalMessage: React.FC = () => {
           whileInView={{ scaleX: 1, opacity: 1 }}
           transition={{ duration: 0.8, delay: 0.7, ease: "easeOut" }}
           viewport={{ once: true }}
-          className="mb-10 flex justify-center text-[#536332]"
+          className="mb-10 flex justify-center text-wedding-olive"
         >
           <DividerOrnament className="w-24 md:w-36 drop-shadow-sm" />
         </motion.div>
@@ -88,7 +85,7 @@ const FinalMessage: React.FC = () => {
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.9, ease: "easeOut" }}
           viewport={{ once: true }}
-          className="font-sans text-[10px] sm:text-xs md:text-sm tracking-[0.4em] uppercase text-[#A8ABAE] mb-8 md:mb-10 drop-shadow-sm"
+          className="font-sans text-[10px] sm:text-xs md:text-sm tracking-[0.4em] uppercase text-wedding-pearl mb-8 md:mb-10 drop-shadow-sm"
         >
           ¡Los esperamos!
         </motion.h2>
@@ -101,13 +98,13 @@ const FinalMessage: React.FC = () => {
           viewport={{ once: true }}
           className="flex flex-col items-center justify-center -space-y-4 md:-space-y-6"
         >
-          <span className="font-display text-5xl sm:text-7xl md:text-8xl lg:text-[7.5rem] text-[#FCFBF5] tracking-tight drop-shadow-lg leading-none">
+          <span className="font-display text-5xl sm:text-7xl md:text-8xl lg:text-[7.5rem] text-wedding-cream tracking-tight drop-shadow-lg leading-none">
             {COUPLE_NAMES.bride}
           </span>
-          <span className="font-serif italic text-3xl sm:text-5xl md:text-6xl text-[#536332] font-light z-10 my-2">
+          <span className="font-serif italic text-3xl sm:text-5xl md:text-6xl text-wedding-olive font-light z-10 my-2">
             &
           </span>
-          <span className="font-display text-5xl sm:text-7xl md:text-8xl lg:text-[7.5rem] text-[#FCFBF5] tracking-tight drop-shadow-lg leading-none">
+          <span className="font-display text-5xl sm:text-7xl md:text-8xl lg:text-[7.5rem] text-wedding-cream tracking-tight drop-shadow-lg leading-none">
             {COUPLE_NAMES.groom}
           </span>
         </motion.div>
@@ -119,12 +116,12 @@ const FinalMessage: React.FC = () => {
         whileInView={{ opacity: 1 }}
         transition={{ duration: 0.8, delay: 1 }}
         viewport={{ once: true }}
-        className="absolute bottom-6 w-full text-center text-[#A8ABAE] text-xs font-sans z-10 tracking-[0.2em] uppercase font-light"
+        className="absolute bottom-6 w-full text-center text-wedding-pearl text-xs font-sans z-10 tracking-[0.2em] uppercase font-light"
       >
         Hecho con <motion.span
           animate={isVisible ? { scale: [1, 1.25, 1] } : { scale: 1 }}
           transition={{ repeat: isVisible ? Infinity : 0, duration: 1.5, ease: "easeInOut" }}
-          className="inline-block text-[#536332] mx-1"
+          className="inline-block text-wedding-olive mx-1"
         >♥</motion.span> para nuestra boda
       </motion.div>
     </footer>

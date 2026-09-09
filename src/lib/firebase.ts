@@ -1,3 +1,4 @@
+import type { FirebaseApp } from 'firebase/app';
 import type { Firestore } from 'firebase/firestore';
 import type { Invitado } from '@/types';
 
@@ -19,15 +20,31 @@ export const isFirebaseConfigured = Boolean(
  * lazily keeps it out of the critical path: it only arrives when a guest opens
  * a personal RSVP link (?invite=…) or the admin panel.
  */
+let appPromise: Promise<FirebaseApp> | null = null;
 let dbPromise: Promise<Firestore> | null = null;
+
+/**
+ * Instancia única de la app, compartida por Firestore y por Auth: crear dos
+ * apps distintas haría que las reglas no vieran la sesión iniciada.
+ */
+export const getApp = (): Promise<FirebaseApp> => {
+  // Sin credenciales, Firestore NO falla: reintenta la conexión para siempre y
+  // la promesa nunca se resuelve. Cortamos aquí para que el error sea visible.
+  if (!isFirebaseConfigured) {
+    return Promise.reject(new FirebaseNotConfiguredError());
+  }
+
+  appPromise ??= (async () => {
+    const { initializeApp } = await import('firebase/app');
+    return initializeApp(firebaseConfig);
+  })();
+  return appPromise;
+};
 
 const getDb = (): Promise<Firestore> => {
   dbPromise ??= (async () => {
-    const [{ initializeApp }, { getFirestore }] = await Promise.all([
-      import('firebase/app'),
-      import('firebase/firestore'),
-    ]);
-    return getFirestore(initializeApp(firebaseConfig));
+    const { getFirestore } = await import('firebase/firestore');
+    return getFirestore(await getApp());
   })();
   return dbPromise;
 };
@@ -41,6 +58,29 @@ export class FirebaseUnavailableError extends Error {
   }
 }
 
+/** Thrown when the VITE_FIREBASE_* variables are missing (no .env). */
+export class FirebaseNotConfiguredError extends Error {
+  constructor() {
+    super('Firebase no está configurado: falta el archivo .env');
+    this.name = 'FirebaseNotConfiguredError';
+  }
+}
+
+/**
+ * Firestore reintenta de forma indefinida cuando no hay red o el proyecto no
+ * existe, así que sin este límite la interfaz se queda cargando para siempre.
+ */
+const TIMEOUT_MS = 15_000;
+
+function withTimeout<T>(operation: Promise<T>): Promise<T> {
+  return Promise.race([
+    operation,
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new FirebaseUnavailableError('timeout')), TIMEOUT_MS)
+    ),
+  ]);
+}
+
 // ─── RSVP Functions ───────────────────────────────────────
 
 /**
@@ -51,7 +91,7 @@ export class FirebaseUnavailableError extends Error {
 export async function getInvitado(code: string): Promise<Invitado | null> {
   try {
     const { doc, getDoc } = await import('firebase/firestore');
-    const snap = await getDoc(doc(await getDb(), 'invitados', code));
+    const snap = await withTimeout(getDoc(doc(await getDb(), 'invitados', code)));
     return snap.exists() ? ({ id: snap.id, ...snap.data() } as Invitado) : null;
   } catch (error) {
     console.error('Error fetching invitado:', error);
@@ -63,11 +103,13 @@ export async function getInvitado(code: string): Promise<Invitado | null> {
 export async function updateRSVP(code: string, data: Partial<Invitado>): Promise<void> {
   try {
     const { doc, updateDoc } = await import('firebase/firestore');
-    await updateDoc(doc(await getDb(), 'invitados', code), {
-      ...data,
-      confirmado: true,
-      fechaConfirmacion: new Date().toISOString(),
-    });
+    await withTimeout(
+      updateDoc(doc(await getDb(), 'invitados', code), {
+        ...data,
+        confirmado: true,
+        fechaConfirmacion: new Date().toISOString(),
+      })
+    );
   } catch (error) {
     console.error('Error updating RSVP:', error);
     throw new FirebaseUnavailableError(error);
@@ -76,23 +118,21 @@ export async function updateRSVP(code: string, data: Partial<Invitado>): Promise
 
 // ─── Admin Functions ──────────────────────────────────────
 
-/** Get all invitados */
+/**
+ * Get all invitados. Lanza en vez de devolver [] para que el panel pueda
+ * distinguir "todavía no hay invitados" de "no se pudo leer la base".
+ */
 export async function getAllInvitados(): Promise<Invitado[]> {
-  try {
-    const { collection, getDocs } = await import('firebase/firestore');
-    const snap = await getDocs(collection(await getDb(), 'invitados'));
-    return snap.docs.map(d => ({ id: d.id, ...d.data() })) as Invitado[];
-  } catch (error) {
-    console.error('Error fetching all invitados:', error);
-    return [];
-  }
+  const { collection, getDocs } = await import('firebase/firestore');
+  const snap = await withTimeout(getDocs(collection(await getDb(), 'invitados')));
+  return snap.docs.map(d => ({ id: d.id, ...d.data() })) as Invitado[];
 }
 
 /** Create a new invitado */
 export async function createInvitado(code: string, data: Omit<Invitado, 'id'>): Promise<boolean> {
   try {
     const { doc, setDoc } = await import('firebase/firestore');
-    await setDoc(doc(await getDb(), 'invitados', code), data);
+    await withTimeout(setDoc(doc(await getDb(), 'invitados', code), data));
     return true;
   } catch (error) {
     console.error('Error creating invitado:', error);
@@ -104,7 +144,7 @@ export async function createInvitado(code: string, data: Omit<Invitado, 'id'>): 
 export async function updateInvitadoAdmin(code: string, data: Partial<Invitado>): Promise<boolean> {
   try {
     const { doc, updateDoc } = await import('firebase/firestore');
-    await updateDoc(doc(await getDb(), 'invitados', code), data);
+    await withTimeout(updateDoc(doc(await getDb(), 'invitados', code), data));
     return true;
   } catch (error) {
     console.error('Error updating invitado (Admin):', error);
@@ -116,7 +156,7 @@ export async function updateInvitadoAdmin(code: string, data: Partial<Invitado>)
 export async function deleteInvitado(code: string): Promise<boolean> {
   try {
     const { doc, deleteDoc } = await import('firebase/firestore');
-    await deleteDoc(doc(await getDb(), 'invitados', code));
+    await withTimeout(deleteDoc(doc(await getDb(), 'invitados', code)));
     return true;
   } catch (error) {
     console.error('Error deleting invitado:', error);

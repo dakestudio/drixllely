@@ -3,25 +3,22 @@ import { useCountdown } from '@/hooks/useCountdown';
 import { WEDDING_DATE } from '@/constants';
 import { motion } from 'framer-motion';
 
-// --- PALETA OFICIAL DE LA BODA ---
-// Dark Lila: #381031
-// Gris Perla: #A8ABAE
-// Verde Olivo: #536332
-// Blanco: #FCFBF5
+// Paleta: usa los tokens wedding-lila / -pearl / -olive / -cream.
+// Se definen en el bloque @theme de src/index.css (fuente unica).
 
 const TimeUnit = ({ value, label, showSeparator = true }: { value: number; label: string; showSeparator?: boolean }) => (
   <div className="flex items-center">
     <div className="flex flex-col items-center">
-      <span className="font-display text-4xl sm:text-5xl md:text-7xl lg:text-[6rem] text-[#381031] leading-none tracking-tighter">
+      <span className="font-display text-4xl sm:text-5xl md:text-7xl lg:text-[6rem] text-wedding-lila leading-none tracking-tighter">
         {String(value).padStart(2, '0')}
       </span>
-      <span className="font-sans text-[9px] sm:text-[10px] md:text-xs text-[#536332] tracking-[0.4em] uppercase mt-4 sm:mt-6 font-medium">
+      <span className="font-sans text-[9px] sm:text-[10px] md:text-xs text-wedding-olive tracking-[0.4em] uppercase mt-4 sm:mt-6 font-medium">
         {label}
       </span>
     </div>
     
     {showSeparator && (
-      <div className="mx-3 sm:mx-6 md:mx-10 lg:mx-14 font-serif text-2xl sm:text-3xl md:text-5xl text-[#A8ABAE]/50 font-light -mt-8 sm:-mt-10">
+      <div className="mx-3 sm:mx-6 md:mx-10 lg:mx-14 font-serif text-2xl sm:text-3xl md:text-5xl text-wedding-pearl/50 font-light -mt-8 sm:-mt-10">
         :
       </div>
     )}
@@ -37,11 +34,11 @@ const Countdown: React.FC = () => {
   }
 
   return (
-    <section className="py-24 md:py-32 px-4 bg-[#FCFBF5] flex flex-col items-center justify-center overflow-hidden border-t-[0.5px] border-b-[0.5px] border-[#A8ABAE]/20 relative">
+    <section className="py-24 md:py-32 px-4 bg-wedding-cream flex flex-col items-center justify-center overflow-hidden border-t-[0.5px] border-b-[0.5px] border-wedding-pearl/20 relative">
       
       {/* Background Ornament */}
-      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] border border-[#536332]/5 rounded-full pointer-events-none" />
-      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[100%] h-[100%] border border-[#536332]/5 rounded-full pointer-events-none" />
+      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] border border-wedding-olive/5 rounded-full pointer-events-none" />
+      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[100%] h-[100%] border border-wedding-olive/5 rounded-full pointer-events-none" />
 
       <motion.div 
         initial={{ opacity: 0, y: 30 }}
@@ -56,7 +53,7 @@ const Countdown: React.FC = () => {
               whileInView={{ y: 0 }}
               transition={{ duration: 1, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
               viewport={{ once: true }}
-              className="font-serif italic text-2xl sm:text-3xl md:text-4xl text-[#381031]/80 font-light"
+              className="font-serif italic text-2xl sm:text-3xl md:text-4xl text-wedding-lila/80 font-light"
             >
               La espera casi termina
             </motion.h3>

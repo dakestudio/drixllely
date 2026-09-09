@@ -4,8 +4,8 @@ import { GALLERY_IMAGES } from '@/constants';
 import { useIsDesktop } from '@/hooks';
 import { X, Heart } from 'lucide-react';
 
-// --- PALETA DE COLORES (Basada en tu imagen) ---
-// Dark Lila: #381031 | Gris Perla: #A8ABAE | Verde Olivo: #536332 | Blanco: #FCFBF5
+// Paleta: usa los tokens wedding-lila / -pearl / -olive / -cream.
+// Se definen en el bloque @theme de src/index.css (fuente unica).
 
 const PETAL_COUNT = 6;
 
@@ -34,7 +34,7 @@ const FloatingPetals: React.FC = () => {
           animate={{ y: ['-10vh', '110vh'], x: [p.driftFrom, p.driftTo], rotate: [0, 360] }}
           transition={{ duration: p.duration, repeat: Infinity, ease: 'linear', delay: p.delay }}
           className={`absolute rounded-full opacity-30 blur-[2px] ${
-            p.big ? 'bg-[#A8ABAE] w-6 h-6' : 'bg-[#536332] w-4 h-4'
+            p.big ? 'bg-wedding-pearl w-6 h-6' : 'bg-wedding-olive w-4 h-4'
           }`}
           style={{ left: p.left, top: '-10%' }}
         />
@@ -102,7 +102,7 @@ const Gallery: React.FC = () => {
   const selected = GALLERY_IMAGES.find(img => img.id === selectedImage);
 
   return (
-    <section ref={containerRef} className="py-24 md:py-32 px-4 bg-[#FCFBF5] relative overflow-hidden">
+    <section ref={containerRef} className="py-24 md:py-32 px-4 bg-wedding-cream relative overflow-hidden">
 
       {isDesktop && isSectionVisible && <FloatingPetals />}
 
@@ -110,14 +110,14 @@ const Gallery: React.FC = () => {
       <motion.div
         style={{ y: yReverse }}
         aria-hidden="true"
-        className="absolute top-1/4 left-[-5%] text-[#A8ABAE] opacity-10 font-serif text-[6rem] md:text-[12rem] whitespace-nowrap pointer-events-none z-0 select-none"
+        className="absolute top-1/4 left-[-5%] text-wedding-pearl opacity-10 font-serif text-[6rem] md:text-[12rem] whitespace-nowrap pointer-events-none z-0 select-none"
       >
         Drix &amp; Llely
       </motion.div>
       <motion.div
         style={{ y: yFast }}
         aria-hidden="true"
-        className="absolute bottom-1/4 right-[-5%] text-[#536332] opacity-10 font-serif text-[6rem] md:text-[12rem] whitespace-nowrap pointer-events-none z-0 select-none"
+        className="absolute bottom-1/4 right-[-5%] text-wedding-olive opacity-10 font-serif text-[6rem] md:text-[12rem] whitespace-nowrap pointer-events-none z-0 select-none"
       >
         Drix &amp; Llely
       </motion.div>
@@ -132,11 +132,11 @@ const Gallery: React.FC = () => {
           viewport={{ once: true }}
           className="text-center mb-16 md:mb-24"
         >
-          <h2 className="font-serif italic text-5xl md:text-7xl text-[#381031] mb-4">Nuestra Historia</h2>
-          <div className="flex items-center justify-center gap-4 text-[#536332]">
-            <div className="w-12 h-[1px] bg-[#536332]"></div>
+          <h2 className="font-serif italic text-5xl md:text-7xl text-wedding-lila mb-4">Nuestra Historia</h2>
+          <div className="flex items-center justify-center gap-4 text-wedding-olive">
+            <div className="w-12 h-[1px] bg-wedding-olive"></div>
             <Heart size={16} className={isSectionVisible ? 'animate-pulse' : undefined} />
-            <div className="w-12 h-[1px] bg-[#536332]"></div>
+            <div className="w-12 h-[1px] bg-wedding-olive"></div>
           </div>
         </motion.div>
 
@@ -166,7 +166,7 @@ const Gallery: React.FC = () => {
                   whileTap={{ scale: 0.96 }}
                   onClick={() => setSelectedImage(img.id)}
                   aria-label={`Ampliar ${img.alt}`}
-                  className="w-full h-full block cursor-pointer overflow-hidden rounded-md shadow-lg group relative bg-[#A8ABAE]/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#536332] focus-visible:ring-offset-2"
+                  className="w-full h-full block cursor-pointer overflow-hidden rounded-md shadow-lg group relative bg-wedding-pearl/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-wedding-olive focus-visible:ring-offset-2"
                 >
                   <motion.img
                     layoutId={`gallery-img-${img.id}`}
@@ -180,7 +180,7 @@ const Gallery: React.FC = () => {
                   />
 
                   {/* Capa de color oscura solo para Desktop al pasar el mouse */}
-                  <div className="absolute inset-0 bg-[#381031]/0 group-hover:bg-[#381031]/10 transition-all duration-500 hidden md:block" />
+                  <div className="absolute inset-0 bg-wedding-lila/0 group-hover:bg-wedding-lila/10 transition-all duration-500 hidden md:block" />
                 </motion.button>
               </motion.div>
             );
@@ -201,14 +201,14 @@ const Gallery: React.FC = () => {
             aria-label={selected.alt}
             /* backdrop-blur estático: animarlo cuesta un repaint de pantalla
                completa por frame y en móvil se ve como un tirón. */
-            className="fixed inset-0 z-50 bg-[#FCFBF5]/85 backdrop-blur-md flex items-center justify-center p-4 sm:p-8"
+            className="fixed inset-0 z-50 bg-wedding-cream/85 backdrop-blur-md flex items-center justify-center p-4 sm:p-8"
             onClick={closeLightbox}
           >
             <button
               type="button"
               onClick={closeLightbox}
               aria-label="Cerrar imagen"
-              className="absolute top-6 right-6 text-[#381031] hover:text-[#536332] transition-colors z-50 p-3 bg-white/60 rounded-full shadow-sm"
+              className="absolute top-6 right-6 text-wedding-lila hover:text-wedding-olive transition-colors z-50 p-3 bg-white/60 rounded-full shadow-sm"
             >
               <X size={28} />
             </button>

@@ -1,0 +1,79 @@
+rules_version = '2';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Reglas de seguridad — Invitación de boda Drix & Llely
+//
+// Estas reglas son la ÚNICA protección real de la lista de invitados. Todo lo
+// que vive en el frontend (contraseñas, comprobaciones en React) se puede leer
+// o saltar desde las DevTools del navegador; esto se ejecuta en los servidores
+// de Google y no se puede evitar.
+//
+// Modelo:
+//   · Un invitado NO tiene sesión. Llega con un enlace ?invite=CODIGO y solo
+//     puede leer y confirmar SU propia invitación.
+//   · Los novios SÍ tienen sesión (Firebase Auth) y son los únicos que pueden
+//     listar, crear, editar libremente y borrar.
+//
+// Cómo publicarlas:
+//   Consola de Firebase → Firestore Database → pestaña "Reglas" → pegar → Publicar
+// ─────────────────────────────────────────────────────────────────────────────
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function estaAutenticado() {
+      return request.auth != null;
+    }
+
+    match /invitados/{codigo} {
+
+      // ── LECTURA ──────────────────────────────────────────────────────────
+      // `get`  = leer UN documento cuyo código ya conoces (el del enlace).
+      // `list` = recorrer la colección entera.
+      //
+      // Separarlos es lo importante: sin esto, cualquiera podría descargar la
+      // lista completa de invitados con sus teléfonos.
+      allow get: if true;
+      allow list: if estaAutenticado();
+
+      // ── ESCRITURA DEL INVITADO ───────────────────────────────────────────
+      // Solo puede tocar los campos de su confirmación. No puede cambiarse el
+      // nombre, ni regalarse pases extra, ni escribir en otro documento.
+      function confirmacionValida() {
+        let camposPermitidos = [
+          'telefono', 'asistira', 'numInvitados', 'nombresAcompanantes',
+          'tieneRestricciones', 'restricciones', 'mensaje',
+          'confirmado', 'fechaConfirmacion'
+        ];
+        let nuevo = request.resource.data;
+        let actual = resource.data;
+
+        return nuevo.diff(actual).affectedKeys().hasOnly(camposPermitidos)
+          // Identidad y cupo intactos: aquí es donde se frena el fraude.
+          && nuevo.nombre == actual.nombre
+          && nuevo.maxInvitados == actual.maxInvitados
+          // Nadie mete más gente de la que tiene asignada.
+          && nuevo.numInvitados is int
+          && nuevo.numInvitados >= 0
+          && nuevo.numInvitados <= actual.maxInvitados
+          && nuevo.asistira in ['yes', 'no']
+          && nuevo.confirmado == true
+          // Límites de tamaño para que nadie use la base como almacén.
+          && nuevo.telefono is string && nuevo.telefono.size() <= 20
+          && nuevo.mensaje is string && nuevo.mensaje.size() <= 1000
+          && nuevo.restricciones is string && nuevo.restricciones.size() <= 500
+          && nuevo.nombresAcompanantes.size() <= 20;
+      }
+
+      allow update: if estaAutenticado() || confirmacionValida();
+
+      // ── SOLO LOS NOVIOS ──────────────────────────────────────────────────
+      allow create, delete: if estaAutenticado();
+    }
+
+    // Todo lo demás queda cerrado por defecto.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

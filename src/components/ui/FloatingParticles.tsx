@@ -11,8 +11,15 @@ interface Particle {
   rotationSpeed: number;
 }
 
-/** Verde olivo de la paleta oficial (antes era el dorado #D4AF37). */
-const PARTICLE_COLOR = '#536332';
+/**
+ * El canvas necesita un color literal para `fillStyle`, así que lo leemos del
+ * token del @theme en vez de repetir el hex aquí. El respaldo solo entra si la
+ * hoja de estilos aún no aplicó (verde olivo de la paleta oficial).
+ */
+const readPaletteColor = () =>
+  getComputedStyle(document.documentElement)
+    .getPropertyValue('--color-wedding-olive')
+    .trim() || '#536332';
 
 const FloatingParticles: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -28,6 +35,8 @@ const FloatingParticles: React.FC = () => {
 
     // Respect the OS "reduce motion" setting: draw one static frame, no loop.
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    const particleColor = readPaletteColor();
 
     let width = 0;
     let height = 0;
@@ -87,9 +96,9 @@ const FloatingParticles: React.FC = () => {
         // Soft diamond. The glow comes from a single shadowed fill — the
         // previous version painted every particle twice, which made shadowBlur
         // (already the most expensive canvas op) cost double.
-        ctx.shadowColor = PARTICLE_COLOR;
+        ctx.shadowColor = particleColor;
         ctx.shadowBlur = p.size * 2;
-        ctx.fillStyle = PARTICLE_COLOR;
+        ctx.fillStyle = particleColor;
         ctx.beginPath();
         ctx.moveTo(0, -p.size);
         ctx.lineTo(p.size * 0.6, 0);

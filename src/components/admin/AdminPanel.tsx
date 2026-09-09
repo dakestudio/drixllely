@@ -1,25 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Invitado } from '@/types';
-import { getAllInvitados, createInvitado, deleteInvitado, updateInvitadoAdmin } from '@/lib/firebase';
-import { 
-  Users, UserCheck, UserX, Clock, Plus, Trash2, Copy, 
-  Loader2, LogIn, Download, Search, RefreshCw, Eye, Heart, X, CheckCircle, Filter, ChevronUp, ChevronDown, MessageSquare, AlertTriangle, ChevronLeft, ChevronRight, Pencil
+import { getAllInvitados, createInvitado, deleteInvitado, updateInvitadoAdmin, FirebaseNotConfiguredError } from '@/lib/firebase';
+import { signIn, signOut, onAuthChange, AuthError, type AuthUser } from '@/lib/auth';
+import {
+  Users, UserCheck, UserX, Clock, Plus, Trash2, Copy,
+  Loader2, LogIn, LogOut, Download, Search, RefreshCw, Eye, Heart, X, CheckCircle, Filter, ChevronUp, ChevronDown, MessageSquare, AlertTriangle, ChevronLeft, ChevronRight, Pencil
 } from 'lucide-react';
-
-
-/*
- * ⚠️ Esto es un portón, no una cerradura.
- *
- * Cualquier contraseña que viva en el frontend termina en el bundle que el
- * navegador descarga: se lee abriendo las DevTools. Sacarla a una variable de
- * entorno evita que quede escrita en el repositorio de GitHub, pero NO impide
- * que alguien la extraiga del JavaScript ya desplegado.
- *
- * La protección real de la lista de invitados son las reglas de Firestore.
- * Mientras la colección `invitados` acepte escrituras anónimas, este panel es
- * solo comodidad — ver las notas de seguridad en README.md.
- */
-const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD ?? 'boda2026';
 
 function generateCode(): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -32,14 +18,14 @@ function generateCode(): string {
 const StatCard = ({ icon: Icon, label, value, accent, className }: { 
   icon: React.ElementType; label: string; value: number; accent: string; className?: string;
 }) => (
-  <div className={`bg-white border border-stone-200 rounded-lg p-5 hover:shadow-md transition-all duration-300 group ${className || ''}`}>
+  <div className={`bg-white border border-wedding-pearl/40 rounded-lg p-5 hover:shadow-md transition-all duration-300 group ${className || ''}`}>
     <div className="flex items-center gap-3 mb-3">
       <div className={`w-9 h-9 rounded-lg ${accent} flex items-center justify-center`}>
         <Icon className="w-4 h-4 text-white" />
       </div>
-      <span className="text-[10px] uppercase tracking-widest text-stone-400">{label}</span>
+      <span className="text-[10px] uppercase tracking-widest text-wedding-pearl">{label}</span>
     </div>
-    <p className="text-3xl font-display text-stone-800 group-hover:text-stone-900 transition-colors">{value}</p>
+    <p className="text-3xl font-display text-wedding-lila group-hover:text-wedding-lila transition-colors">{value}</p>
   </div>
 );
 
@@ -47,18 +33,22 @@ const StatCard = ({ icon: Icon, label, value, accent, className }: {
 const Toast = ({ message, onClose }: { message: string; onClose: () => void }) => {
   useEffect(() => { const t = setTimeout(onClose, 2500); return () => clearTimeout(t); }, [onClose]);
   return (
-    <div className="fixed top-6 right-6 z-50 bg-stone-800 text-white px-6 py-3 rounded-lg shadow-2xl flex items-center gap-2 text-sm">
-      <CheckCircle className="w-4 h-4 text-amber-400" /> {message}
+    <div className="fixed top-6 right-6 z-50 bg-wedding-lila text-white px-6 py-3 rounded-lg shadow-2xl flex items-center gap-2 text-sm">
+      <CheckCircle className="w-4 h-4 text-wedding-olive" /> {message}
     </div>
   );
 };
 
 const AdminPanel: React.FC = () => {
-  const [authenticated, setAuthenticated] = useState(() => sessionStorage.getItem('admin_auth') === 'true');
+  // `undefined` = todavía preguntando a Firebase si hay sesión guardada.
+  const [user, setUser] = useState<AuthUser | null | undefined>(undefined);
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [passwordError, setPasswordError] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [signingIn, setSigningIn] = useState(false);
   const [invitados, setInvitados] = useState<Invitado[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'confirmed' | 'declined' | 'pending' | 'attention'>('all');
   const [showForm, setShowForm] = useState(false);
@@ -77,24 +67,53 @@ const AdminPanel: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 10;
 
-  const handleLogin = (e: React.FormEvent) => {
+  // Firebase Auth es ahora la fuente de verdad de la sesión. Ya no hay
+  // contraseña en el código ni bandera en sessionStorage: ambas se podían
+  // leer o falsificar desde el navegador.
+  useEffect(() => onAuthChange(setUser), []);
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password === ADMIN_PASSWORD) {
-      setAuthenticated(true);
-      sessionStorage.setItem('admin_auth', 'true');
-    } else {
-      setPasswordError(true);
+    setAuthError(null);
+    setSigningIn(true);
+    try {
+      await signIn(email, password);
+      setPassword('');
+    } catch (error) {
+      setAuthError(error instanceof AuthError ? error.message : 'No se pudo iniciar sesión.');
+    } finally {
+      setSigningIn(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+    } catch {
+      setToast('No se pudo cerrar sesión');
     }
   };
 
   const fetchInvitados = async () => {
     setLoading(true);
-    const data = await getAllInvitados();
-    setInvitados(data);
-    setLoading(false);
+    setLoadError(null);
+    try {
+      setInvitados(await getAllInvitados());
+    } catch (error) {
+      // Sin este manejo la tabla se quedaba girando para siempre: Firestore
+      // reintenta en silencio y su promesa nunca se rechaza.
+      setInvitados([]);
+      setLoadError(
+        error instanceof FirebaseNotConfiguredError
+          ? 'Firebase no está configurado. Falta el archivo .env con las variables VITE_FIREBASE_*.'
+          : 'No se pudo leer la base de datos. Revisa tu conexión y las reglas de Firestore.'
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
-  useEffect(() => { if (authenticated) fetchInvitados(); }, [authenticated]);
+  useEffect(() => { if (user) fetchInvitados(); }, [user]);
 
   const handleCreateOrUpdate = async () => {
     if (!newNombre.trim()) return;
@@ -290,36 +309,75 @@ const AdminPanel: React.FC = () => {
     return sortDirection === 'asc' ? <ChevronUp className="w-3 h-3 inline ml-1" /> : <ChevronDown className="w-3 h-3 inline ml-1" />;
   };
 
-  // ─── Login Screen ──────────────────────────────────
-  if (!authenticated) {
+  // ─── Comprobando sesión ────────────────────────────
+  // Sin este estado el panel parpadearía mostrando el login un instante antes
+  // de que Firebase confirme que la sesión guardada sigue siendo válida.
+  if (user === undefined) {
     return (
-      <div className="min-h-screen bg-stone-50 flex items-center justify-center px-4">
+      <div className="min-h-screen bg-wedding-cream flex items-center justify-center" role="status">
+        <Loader2 className="w-8 h-8 animate-spin text-wedding-olive" />
+        <span className="sr-only">Comprobando sesión…</span>
+      </div>
+    );
+  }
+
+  // ─── Login Screen ──────────────────────────────────
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-wedding-cream flex items-center justify-center px-4">
         <div className="max-w-sm w-full">
           <div className="text-center mb-10">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-amber-50 border border-amber-200 mb-6">
-              <Heart className="w-7 h-7 text-amber-600" />
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-wedding-olive/10 border border-wedding-olive/30 mb-6">
+              <Heart className="w-7 h-7 text-wedding-olive" />
             </div>
-            <h1 className="text-3xl font-display text-stone-800 mb-2">Panel de Bodas</h1>
-            <p className="text-stone-400 text-sm">Administración de invitados</p>
+            <h1 className="text-3xl font-display text-wedding-lila mb-2">Panel de Invitados</h1>
+            <p className="text-wedding-pearl text-sm">Drix &amp; Llely</p>
           </div>
-          <form onSubmit={handleLogin} className="bg-white border border-stone-200 rounded-xl p-8 shadow-sm">
-            <div className="mb-6">
-              <label className="block text-xs uppercase tracking-widest text-stone-400 mb-3">Contraseña</label>
+          <form onSubmit={handleLogin} className="bg-white border border-wedding-pearl/40 rounded-xl p-8 shadow-sm">
+            <div className="mb-5">
+              <label htmlFor="admin-email" className="block text-xs uppercase tracking-widest text-wedding-pearl mb-3">
+                Correo
+              </label>
               <input
-                type="password"
-                value={password}
-                onChange={(e) => { setPassword(e.target.value); setPasswordError(false); }}
-                className={`w-full border-b-2 ${passwordError ? 'border-red-300' : 'border-stone-200'} py-3 text-stone-800 placeholder-stone-300 focus:outline-none focus:border-amber-500 transition-colors text-lg`}
-                placeholder="••••••••"
+                id="admin-email"
+                type="email"
+                autoComplete="username"
+                required
+                value={email}
+                onChange={(e) => { setEmail(e.target.value); setAuthError(null); }}
+                className="w-full border-b-2 border-wedding-pearl/40 py-3 text-wedding-lila placeholder-wedding-pearl/70 focus:outline-none focus:border-wedding-olive transition-colors text-lg"
+                placeholder="novios@correo.com"
                 autoFocus
               />
-              {passwordError && <p className="text-red-400 text-xs mt-2">Contraseña incorrecta</p>}
             </div>
+            <div className="mb-6">
+              <label htmlFor="admin-password" className="block text-xs uppercase tracking-widest text-wedding-pearl mb-3">
+                Contraseña
+              </label>
+              <input
+                id="admin-password"
+                type="password"
+                autoComplete="current-password"
+                required
+                value={password}
+                onChange={(e) => { setPassword(e.target.value); setAuthError(null); }}
+                className={`w-full border-b-2 ${authError ? 'border-red-300' : 'border-wedding-pearl/40'} py-3 text-wedding-lila placeholder-wedding-pearl/70 focus:outline-none focus:border-wedding-olive transition-colors text-lg`}
+                placeholder="••••••••"
+              />
+            </div>
+
+            {authError && (
+              <p role="alert" className="text-red-600 text-xs mb-5 leading-relaxed">{authError}</p>
+            )}
+
             <button
               type="submit"
-              className="w-full bg-stone-800 text-white py-3 rounded-lg text-sm uppercase tracking-widest hover:bg-stone-700 transition-all flex items-center justify-center gap-2"
+              disabled={signingIn}
+              className="w-full bg-wedding-lila text-white py-3 rounded-lg text-sm uppercase tracking-widest hover:bg-wedding-lila/90 transition-all flex items-center justify-center gap-2 disabled:opacity-60"
             >
-              <LogIn className="w-4 h-4" /> Entrar
+              {signingIn
+                ? <><Loader2 className="w-4 h-4 animate-spin" /> Entrando…</>
+                : <><LogIn className="w-4 h-4" /> Entrar</>}
             </button>
           </form>
         </div>
@@ -329,51 +387,82 @@ const AdminPanel: React.FC = () => {
 
   // ─── Dashboard ─────────────────────────────────────
   return (
-    <div className="min-h-screen bg-stone-50">
+    <div className="min-h-screen bg-wedding-cream">
       {toast && <Toast message={toast} onClose={() => setToast(null)} />}
 
       {/* Header */}
-      <header className="bg-white border-b border-stone-200 sticky top-0 z-40">
+      <header className="bg-white border-b border-wedding-pearl/40 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-amber-50 border border-amber-200 flex items-center justify-center">
-              <Heart className="w-4 h-4 text-amber-600" />
+            <div className="w-9 h-9 rounded-lg bg-wedding-olive/10 border border-wedding-olive/30 flex items-center justify-center">
+              <Heart className="w-4 h-4 text-wedding-olive" />
             </div>
             <div>
-              <h1 className="text-lg font-display text-stone-800">Panel de Invitados</h1>
-              <p className="text-stone-400 text-[10px] uppercase tracking-widest">Administración de boda</p>
+              <h1 className="text-lg font-display text-wedding-lila">Panel de Invitados</h1>
+              <p className="text-wedding-pearl text-[10px] uppercase tracking-widest">Administración de boda</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={fetchInvitados} className="p-2.5 text-stone-400 hover:text-stone-600 rounded-lg hover:bg-stone-100 transition-all" title="Refrescar">
+            <button onClick={fetchInvitados} className="p-2.5 text-wedding-pearl hover:text-wedding-lila/70 rounded-lg hover:bg-wedding-pearl/20 transition-all" title="Refrescar">
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
             </button>
-            <button onClick={exportCSV} className="flex items-center gap-2 px-4 py-2.5 border border-stone-200 rounded-lg text-xs text-stone-500 hover:bg-stone-50 hover:text-stone-700 transition-all">
+            <button onClick={exportCSV} className="flex items-center gap-2 px-4 py-2.5 border border-wedding-pearl/40 rounded-lg text-xs text-wedding-lila/60 hover:bg-wedding-cream hover:text-wedding-lila/80 transition-all">
               <Download className="w-3.5 h-3.5" /> CSV
             </button>
-            <a href="/" className="text-xs text-stone-400 hover:text-stone-600 transition-colors ml-2">← Invitación</a>
+            <a href="/" className="text-xs text-wedding-pearl hover:text-wedding-lila/70 transition-colors ml-2">← Invitación</a>
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-2 px-3 py-2.5 text-xs text-wedding-pearl hover:text-wedding-lila/80 rounded-lg hover:bg-wedding-pearl/20 transition-all ml-1"
+              title={user.email ? `Cerrar sesión (${user.email})` : 'Cerrar sesión'}
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Salir</span>
+            </button>
           </div>
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+        {loadError && (
+          <div
+            role="alert"
+            className="mb-6 flex items-start gap-3 bg-red-50 border border-red-200 rounded-lg px-5 py-4"
+          >
+            <AlertTriangle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-red-700">No se pudieron cargar los invitados</p>
+              <p className="text-xs text-red-600 mt-1">{loadError}</p>
+            </div>
+            <button
+              onClick={fetchInvitados}
+              className="text-xs uppercase tracking-widest text-red-700 border border-red-300 rounded-lg px-4 py-2 hover:bg-red-100 transition-colors shrink-0"
+            >
+              Reintentar
+            </button>
+          </div>
+        )}
+
         {/* Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-4">
-          <StatCard icon={Users} label="Total" value={stats.total} accent="bg-stone-500" />
+          <StatCard icon={Users} label="Total" value={stats.total} accent="bg-wedding-lila/60" />
           <StatCard icon={UserCheck} label="Confirmados" value={stats.confirmados} accent="bg-emerald-500" />
           <StatCard icon={UserX} label="No Asisten" value={stats.noAsisten} accent="bg-red-400" />
+          {/* Los colores de ESTADO no se migran a la paleta a propósito:
+              confirmado / no asiste / pendiente deben distinguirse de un
+              vistazo, y en verde olivo se confundirían con el verde de
+              "confirmado". El resto del panel sí usa la paleta de la boda. */}
           <StatCard icon={Clock} label="Pendientes" value={stats.pendientes} accent="bg-amber-500" />
-          <StatCard className="col-span-2 sm:col-span-1" icon={Users} label="Personas" value={stats.totalPersonas} accent="bg-blue-400" />
+          <StatCard className="col-span-2 sm:col-span-1" icon={Users} label="Personas" value={stats.totalPersonas} accent="bg-wedding-olive" />
         </div>
 
         {/* Progress Bar */}
         {stats.total > 0 && (
-          <div className="bg-white border border-stone-200 rounded-lg p-5 mb-8 shadow-sm">
-            <div className="flex justify-between text-xs font-medium text-stone-500 mb-2">
+          <div className="bg-white border border-wedding-pearl/40 rounded-lg p-5 mb-8 shadow-sm">
+            <div className="flex justify-between text-xs font-medium text-wedding-lila/60 mb-2">
               <span>Progreso de Confirmaciones</span>
               <span>{Math.round((stats.confirmados / stats.total) * 100)}% Confirmado</span>
             </div>
-            <div className="w-full h-3 bg-stone-100 rounded-full overflow-hidden flex">
+            <div className="w-full h-3 bg-wedding-pearl/20 rounded-full overflow-hidden flex">
               <div 
                 style={{ width: `${(stats.confirmados / stats.total) * 100}%` }} 
                 className="bg-emerald-500 h-full transition-all duration-500" 
@@ -386,11 +475,11 @@ const AdminPanel: React.FC = () => {
               />
               <div 
                 style={{ width: `${(stats.pendientes / stats.total) * 100}%` }} 
-                className="bg-amber-400 h-full transition-all duration-500" 
+                className="bg-amber-400 h-full transition-all duration-500"
                 title={`${stats.pendientes} Pendientes`}
               />
             </div>
-            <div className="flex gap-4 mt-3 text-[10px] uppercase tracking-widest text-stone-400 justify-center">
+            <div className="flex gap-4 mt-3 text-[10px] uppercase tracking-widest text-wedding-pearl justify-center">
               <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500"></span> Confirman</div>
               <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-400"></span> No asistirán</div>
               <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-400"></span> Pendientes</div>
@@ -401,13 +490,13 @@ const AdminPanel: React.FC = () => {
         {/* Actions Bar */}
         <div className="flex flex-col sm:flex-row gap-3 mb-6">
           <div className="flex-1 relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-wedding-pearl" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Buscar por nombre o código..."
-              className="w-full pl-11 pr-4 py-3 bg-white border border-stone-200 rounded-lg text-sm text-stone-800 placeholder-stone-300 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100 transition-all"
+              className="w-full pl-11 pr-4 py-3 bg-white border border-wedding-pearl/40 rounded-lg text-sm text-wedding-lila placeholder-wedding-pearl/70 focus:outline-none focus:border-wedding-olive focus:ring-2 focus:ring-wedding-olive/20 transition-all"
             />
           </div>
           <button
@@ -417,17 +506,17 @@ const AdminPanel: React.FC = () => {
               setEditingInvitadoId(null);
               setShowForm(!showForm);
             }}
-            className="flex items-center justify-center gap-2 bg-stone-800 text-white px-6 py-3 rounded-lg text-xs uppercase tracking-wider hover:bg-stone-700 transition-all shrink-0"
+            className="flex items-center justify-center gap-2 bg-wedding-lila text-white px-6 py-3 rounded-lg text-xs uppercase tracking-wider hover:bg-wedding-lila/90 transition-all shrink-0"
           >
             <Plus className="w-4 h-4" /> Nuevo Invitado
           </button>
           <div className="relative shrink-0">
-            <Filter className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 pointer-events-none" />
+            <Filter className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-wedding-pearl pointer-events-none" />
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as 'all' | 'confirmed' | 'declined' | 'pending' | 'attention')}
-              className="w-full sm:w-auto pl-11 pr-10 py-3 bg-white border border-stone-200 rounded-lg text-sm text-stone-700 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100 transition-all cursor-pointer appearance-none"
-              style={{ backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23a8a29e' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`, backgroundPosition: 'right 0.5rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1.5em 1.5em' }}
+              className="w-full sm:w-auto pl-11 pr-10 py-3 bg-white border border-wedding-pearl/40 rounded-lg text-sm text-wedding-lila/80 focus:outline-none focus:border-wedding-olive focus:ring-2 focus:ring-wedding-olive/20 transition-all cursor-pointer appearance-none"
+              style={{ backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23A8ABAE' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`, backgroundPosition: 'right 0.5rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1.5em 1.5em' }}
             >
               <option value="all">Todos los estados</option>
               <option value="confirmed">Confirmados</option>
@@ -440,24 +529,24 @@ const AdminPanel: React.FC = () => {
 
         {/* Add Form */}
         {showForm && (
-          <div className="bg-white border border-stone-200 rounded-lg p-6 mb-6 flex flex-col sm:flex-row gap-4 items-end shadow-sm">
+          <div className="bg-white border border-wedding-pearl/40 rounded-lg p-6 mb-6 flex flex-col sm:flex-row gap-4 items-end shadow-sm">
             <div className="flex-1">
-              <label className="block text-xs uppercase tracking-widest text-stone-400 mb-2">Nombre del invitado</label>
+              <label className="block text-xs uppercase tracking-widest text-wedding-pearl mb-2">Nombre del invitado</label>
               <input
                 type="text"
                 value={newNombre}
                 onChange={(e) => setNewNombre(e.target.value)}
-                className="w-full border-b-2 border-stone-200 py-2.5 text-stone-800 placeholder-stone-300 focus:outline-none focus:border-amber-500 transition-colors"
+                className="w-full border-b-2 border-wedding-pearl/40 py-2.5 text-wedding-lila placeholder-wedding-pearl/70 focus:outline-none focus:border-wedding-olive transition-colors"
                 placeholder="Nombre completo"
                 autoFocus
               />
             </div>
             <div className="w-full sm:w-36">
-              <label className="block text-xs uppercase tracking-widest text-stone-400 mb-2">Pases extras</label>
+              <label className="block text-xs uppercase tracking-widest text-wedding-pearl mb-2">Pases extras</label>
               <select
                 value={newExtras}
                 onChange={(e) => setNewExtras(Number(e.target.value))}
-                className="w-full border-b-2 border-stone-200 py-2.5 text-stone-800 focus:outline-none focus:border-amber-500 bg-transparent"
+                className="w-full border-b-2 border-wedding-pearl/40 py-2.5 text-wedding-lila focus:outline-none focus:border-wedding-olive bg-transparent"
               >
                 <option value={-1} disabled>Selecciona...</option>
                 {[0,1,2,3,4,5].map(n => <option key={n} value={n}>{n}</option>)}
@@ -472,7 +561,7 @@ const AdminPanel: React.FC = () => {
                     setNewNombre('');
                     setNewExtras(-1);
                   }}
-                  className="px-6 py-2.5 rounded-lg text-sm bg-stone-100 text-stone-600 hover:bg-stone-200 transition-colors w-full sm:w-auto"
+                  className="px-6 py-2.5 rounded-lg text-sm bg-wedding-pearl/20 text-wedding-lila/70 hover:bg-wedding-pearl/30 transition-colors w-full sm:w-auto"
                 >
                   Cancelar
                 </button>
@@ -480,7 +569,7 @@ const AdminPanel: React.FC = () => {
               <button
                 onClick={handleCreateOrUpdate}
                 disabled={creating || !newNombre.trim()}
-                className="bg-amber-600 text-white px-8 py-2.5 rounded-lg text-sm hover:bg-amber-700 transition-colors disabled:opacity-40 w-full sm:w-auto flex justify-center"
+                className="bg-wedding-olive text-white px-8 py-2.5 rounded-lg text-sm hover:bg-wedding-olive/90 transition-colors disabled:opacity-40 w-full sm:w-auto flex justify-center"
               >
                 {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : editingInvitadoId ? 'Guardar Cambios' : 'Crear Invitado'}
               </button>
@@ -491,35 +580,35 @@ const AdminPanel: React.FC = () => {
         {/* Detail Modal */}
         {selectedInvitado && (
           <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4" onClick={() => setSelectedInvitado(null)}>
-            <div className="bg-white border border-stone-200 rounded-xl max-w-md w-full p-8 shadow-xl" onClick={e => e.stopPropagation()}>
+            <div className="bg-white border border-wedding-pearl/40 rounded-xl max-w-md w-full p-8 shadow-xl" onClick={e => e.stopPropagation()}>
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-2xl font-display text-stone-800">{selectedInvitado.nombre}</h3>
-                <button onClick={() => setSelectedInvitado(null)} className="p-1 text-stone-400 hover:text-stone-600 transition-colors">
+                <h3 className="text-2xl font-display text-wedding-lila">{selectedInvitado.nombre}</h3>
+                <button onClick={() => setSelectedInvitado(null)} className="p-1 text-wedding-pearl hover:text-wedding-lila/70 transition-colors">
                   <X className="w-5 h-5" />
                 </button>
               </div>
               <div className="space-y-4 text-sm">
-                <div className="flex justify-between border-b border-stone-100 pb-3"><span className="text-stone-400">Código</span><span className="font-mono text-stone-600">{selectedInvitado.id}</span></div>
-                <div className="flex justify-between border-b border-stone-100 pb-3"><span className="text-stone-400">Estado</span>
-                  <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${selectedInvitado.asistira === 'yes' ? 'bg-emerald-50 text-emerald-700' : selectedInvitado.asistira === 'no' ? 'bg-red-50 text-red-600' : 'bg-amber-50 text-amber-600'}`}>
+                <div className="flex justify-between border-b border-wedding-pearl/25 pb-3"><span className="text-wedding-pearl">Código</span><span className="font-mono text-wedding-lila/70">{selectedInvitado.id}</span></div>
+                <div className="flex justify-between border-b border-wedding-pearl/25 pb-3"><span className="text-wedding-pearl">Estado</span>
+                  <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${selectedInvitado.asistira === 'yes' ? 'bg-emerald-50 text-emerald-700' : selectedInvitado.asistira === 'no' ? 'bg-red-50 text-red-600' : 'bg-amber-50 text-amber-700'}`}>
                     {selectedInvitado.asistira === 'yes' ? 'Confirmado' : selectedInvitado.asistira === 'no' ? 'No asiste' : 'Pendiente'}
                   </span>
                 </div>
-                <div className="flex justify-between border-b border-stone-100 pb-3"><span className="text-stone-400">Teléfono</span><span className="text-stone-700">{selectedInvitado.telefono || '—'}</span></div>
-                <div className="flex justify-between border-b border-stone-100 pb-3"><span className="text-stone-400">Nº Personas</span><span className="text-stone-700">{selectedInvitado.numInvitados || '—'}</span></div>
+                <div className="flex justify-between border-b border-wedding-pearl/25 pb-3"><span className="text-wedding-pearl">Teléfono</span><span className="text-wedding-lila/80">{selectedInvitado.telefono || '—'}</span></div>
+                <div className="flex justify-between border-b border-wedding-pearl/25 pb-3"><span className="text-wedding-pearl">Nº Personas</span><span className="text-wedding-lila/80">{selectedInvitado.numInvitados || '—'}</span></div>
                 {selectedInvitado.nombresAcompanantes?.length > 0 && (
-                  <div className="border-b border-stone-100 pb-3"><span className="text-stone-400 block mb-2">Acompañantes</span>
-                    <ul className="space-y-1">{selectedInvitado.nombresAcompanantes.map((n, i) => <li key={i} className="text-stone-700 flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-amber-400" />{n}</li>)}</ul>
+                  <div className="border-b border-wedding-pearl/25 pb-3"><span className="text-wedding-pearl block mb-2">Acompañantes</span>
+                    <ul className="space-y-1">{selectedInvitado.nombresAcompanantes.map((n, i) => <li key={i} className="text-wedding-lila/80 flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-wedding-olive" />{n}</li>)}</ul>
                   </div>
                 )}
                 {selectedInvitado.restricciones && (
-                  <div className="border-b border-stone-100 pb-3"><span className="text-stone-400 block mb-1">Restricciones</span><p className="text-stone-700">{selectedInvitado.restricciones}</p></div>
+                  <div className="border-b border-wedding-pearl/25 pb-3"><span className="text-wedding-pearl block mb-1">Restricciones</span><p className="text-wedding-lila/80">{selectedInvitado.restricciones}</p></div>
                 )}
                 {selectedInvitado.mensaje && (
-                  <div className="border-b border-stone-100 pb-3"><span className="text-stone-400 block mb-1">Mensaje</span><p className="text-stone-600 italic">"{selectedInvitado.mensaje}"</p></div>
+                  <div className="border-b border-wedding-pearl/25 pb-3"><span className="text-wedding-pearl block mb-1">Mensaje</span><p className="text-wedding-lila/70 italic">"{selectedInvitado.mensaje}"</p></div>
                 )}
                 {selectedInvitado.fechaConfirmacion && (
-                  <div className="flex justify-between"><span className="text-stone-400">Confirmación</span><span className="text-stone-500 text-xs">{new Date(selectedInvitado.fechaConfirmacion).toLocaleString('es-MX')}</span></div>
+                  <div className="flex justify-between"><span className="text-wedding-pearl">Confirmación</span><span className="text-wedding-lila/60 text-xs">{new Date(selectedInvitado.fechaConfirmacion).toLocaleString('es-MX')}</span></div>
                 )}
               </div>
               <div className="flex gap-2 mt-6">
@@ -536,7 +625,7 @@ const AdminPanel: React.FC = () => {
                 </button>
                 <button
                   onClick={() => copyLink(selectedInvitado.id)}
-                  className="flex-1 py-3 bg-stone-50 border border-stone-200 rounded-lg text-sm text-stone-600 hover:bg-stone-100 hover:text-stone-800 transition-all flex items-center justify-center gap-2"
+                  className="flex-1 py-3 bg-wedding-cream border border-wedding-pearl/40 rounded-lg text-sm text-wedding-lila/70 hover:bg-wedding-pearl/20 hover:text-wedding-lila transition-all flex items-center justify-center gap-2"
                 >
                   <Copy className="w-4 h-4" /> Copiar Link
                 </button>
@@ -548,57 +637,57 @@ const AdminPanel: React.FC = () => {
         {/* Table */}
         {loading ? (
           <div className="text-center py-20">
-            <Loader2 className="w-8 h-8 animate-spin text-stone-300 mx-auto" />
+            <Loader2 className="w-8 h-8 animate-spin text-wedding-pearl/70 mx-auto" />
           </div>
         ) : (
-          <div className="bg-white border border-stone-200 rounded-lg overflow-hidden shadow-sm overflow-x-auto" style={{ scrollbarWidth: 'thin', scrollbarColor: '#d6d3d1 transparent' }}>
+          <div className="bg-white border border-wedding-pearl/40 rounded-lg overflow-hidden shadow-sm overflow-x-auto" style={{ scrollbarWidth: 'thin', scrollbarColor: '#A8ABAE transparent' }}>
             <table className="w-full text-sm min-w-[640px]">
               <thead>
-                <tr className="border-b border-stone-100 bg-stone-50/50">
-                  <th className="text-center px-4 py-4 text-[10px] uppercase tracking-widest text-stone-400 font-medium w-12">#</th>
+                <tr className="border-b border-wedding-pearl/25 bg-wedding-cream/50">
+                  <th className="text-center px-4 py-4 text-[10px] uppercase tracking-widest text-wedding-pearl font-medium w-12">#</th>
                   <th 
-                    className="text-left px-5 py-4 text-[10px] uppercase tracking-widest text-stone-400 font-medium cursor-pointer hover:bg-stone-100 transition-colors group select-none"
+                    className="text-left px-5 py-4 text-[10px] uppercase tracking-widest text-wedding-pearl font-medium cursor-pointer hover:bg-wedding-pearl/20 transition-colors group select-none"
                     onClick={() => handleSort('nombre')}
                   >
                     Nombre <SortIcon field="nombre" />
                   </th>
-                  <th className="text-left px-5 py-4 text-[10px] uppercase tracking-widest text-stone-400 font-medium">Código</th>
+                  <th className="text-left px-5 py-4 text-[10px] uppercase tracking-widest text-wedding-pearl font-medium">Código</th>
                   <th 
-                    className="text-center px-5 py-4 text-[10px] uppercase tracking-widest text-stone-400 font-medium cursor-pointer hover:bg-stone-100 transition-colors group select-none"
+                    className="text-center px-5 py-4 text-[10px] uppercase tracking-widest text-wedding-pearl font-medium cursor-pointer hover:bg-wedding-pearl/20 transition-colors group select-none"
                     onClick={() => handleSort('pases')}
                   >
                     Pases Totales <SortIcon field="pases" />
                   </th>
                   <th 
-                    className="text-center px-5 py-4 text-[10px] uppercase tracking-widest text-stone-400 font-medium cursor-pointer hover:bg-stone-100 transition-colors group select-none"
+                    className="text-center px-5 py-4 text-[10px] uppercase tracking-widest text-wedding-pearl font-medium cursor-pointer hover:bg-wedding-pearl/20 transition-colors group select-none"
                     onClick={() => handleSort('estado')}
                   >
                     Estado <SortIcon field="estado" />
                   </th>
-                  <th className="text-center px-5 py-4 text-[10px] uppercase tracking-widest text-stone-400 font-medium">Personas</th>
-                  <th className="text-right px-5 py-4 text-[10px] uppercase tracking-widest text-stone-400 font-medium">Acciones</th>
+                  <th className="text-center px-5 py-4 text-[10px] uppercase tracking-widest text-wedding-pearl font-medium">Personas</th>
+                  <th className="text-right px-5 py-4 text-[10px] uppercase tracking-widest text-wedding-pearl font-medium">Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 {paginatedInvitados.length === 0 ? (
-                  <tr><td colSpan={7} className="text-center py-16 text-stone-400">
+                  <tr><td colSpan={7} className="text-center py-16 text-wedding-pearl">
                     {invitados.length === 0 ? (
                       <div>
-                        <Users className="w-10 h-10 mx-auto mb-3 text-stone-300" />
+                        <Users className="w-10 h-10 mx-auto mb-3 text-wedding-pearl/70" />
                         <p>No hay invitados aún</p>
-                        <p className="text-xs mt-1 text-stone-300">Usa el botón "Nuevo Invitado" para agregar</p>
+                        <p className="text-xs mt-1 text-wedding-pearl/70">Usa el botón "Nuevo Invitado" para agregar</p>
                       </div>
                     ) : 'Sin resultados para tu búsqueda'}
                   </td></tr>
                 ) : (
                   paginatedInvitados.map((inv, index) => (
-                    <tr key={inv.id} className="border-b border-stone-50 last:border-b-0 hover:bg-amber-50/30 transition-colors">
-                      <td className="px-4 py-4 text-center text-stone-400 text-xs font-mono">
+                    <tr key={inv.id} className="border-b border-wedding-pearl/15 last:border-b-0 hover:bg-wedding-olive/5 transition-colors">
+                      <td className="px-4 py-4 text-center text-wedding-pearl text-xs font-mono">
                         {(currentPage - 1) * ITEMS_PER_PAGE + index + 1}
                       </td>
                       <td className="px-5 py-4">
                         <div className="flex items-center gap-2">
-                          <span className="text-stone-800 font-medium">{inv.nombre}</span>
+                          <span className="text-wedding-lila font-medium">{inv.nombre}</span>
                           {inv.restricciones && (
                             <span title="Tiene restricciones alimenticias" className="inline-flex">
                               <AlertTriangle className="w-3.5 h-3.5 text-amber-500" aria-label="Tiene restricciones alimenticias" />
@@ -606,28 +695,28 @@ const AdminPanel: React.FC = () => {
                           )}
                           {inv.mensaje && (
                             <span title="Dejó un mensaje" className="inline-flex">
-                              <MessageSquare className="w-3.5 h-3.5 text-blue-400" aria-label="Dejó un mensaje" />
+                              <MessageSquare className="w-3.5 h-3.5 text-wedding-olive" aria-label="Dejó un mensaje" />
                             </span>
                           )}
                         </div>
                       </td>
-                      <td className="px-5 py-4 font-mono text-xs text-stone-400">{inv.id}</td>
-                      <td className="px-5 py-4 text-center text-stone-500">{inv.maxInvitados}</td>
+                      <td className="px-5 py-4 font-mono text-xs text-wedding-pearl">{inv.id}</td>
+                      <td className="px-5 py-4 text-center text-wedding-lila/60">{inv.maxInvitados}</td>
                       <td className="px-5 py-4 text-center">
                         <span className={`inline-block px-3 py-1 rounded-full text-[10px] uppercase tracking-wider font-medium ${
                           inv.asistira === 'yes'
                             ? 'bg-emerald-50 text-emerald-700'
                             : inv.asistira === 'no'
                             ? 'bg-red-50 text-red-500'
-                            : 'bg-amber-50 text-amber-600'
+                            : 'bg-amber-50 text-amber-700'
                         }`}>
                           {inv.asistira === 'yes' ? 'Confirmado' : inv.asistira === 'no' ? 'No asiste' : 'Pendiente'}
                         </span>
                       </td>
-                      <td className="px-5 py-4 text-center text-stone-500">{inv.asistira === 'yes' ? inv.numInvitados : '—'}</td>
+                      <td className="px-5 py-4 text-center text-wedding-lila/60">{inv.asistira === 'yes' ? inv.numInvitados : '—'}</td>
                       <td className="px-5 py-4 text-right">
                         <div className="flex items-center justify-end gap-0.5">
-                          <button onClick={() => setSelectedInvitado(inv)} className="p-2 text-stone-400 hover:text-blue-500 rounded-lg hover:bg-blue-50 transition-all" title="Ver detalle">
+                          <button onClick={() => setSelectedInvitado(inv)} className="p-2 text-wedding-pearl hover:text-wedding-olive rounded-lg hover:bg-wedding-olive/10 transition-all" title="Ver detalle">
                             <Eye className="w-4 h-4" />
                           </button>
                           <button onClick={() => {
@@ -635,16 +724,16 @@ const AdminPanel: React.FC = () => {
                             const url = `${baseUrl}/?invite=${inv.id}`;
                             const rawText = `¡Hola ${inv.nombre}! ✨\n\nCon mucha emoción y cariño, queremos compartir contigo uno de los días más especiales de nuestras vidas. Nos encantaría que nos acompañaras a celebrar nuestra boda. 💍🤍\n\nHemos reservado ${inv.maxInvitados} pase${inv.maxInvitados !== 1 ? 's' : ''} especialmente para ti.\n\nPor favor, abre tu invitación en el siguiente enlace y confírmanos tu asistencia:\n${url}\n\n¡Esperamos contar contigo!`;
                             window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(rawText)}`, '_blank');
-                          }} className="p-2 text-stone-400 hover:text-emerald-600 rounded-lg hover:bg-emerald-50 transition-all" title="Enviar por WhatsApp">
+                          }} className="p-2 text-wedding-pearl hover:text-emerald-600 rounded-lg hover:bg-emerald-50 transition-all" title="Enviar por WhatsApp">
                             <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.888-.788-1.489-1.761-1.663-2.06-.173-.299-.018-.461.13-.611.134-.135.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
                            </button>
-                           <button onClick={() => copyLink(inv.id)} className="p-2 text-stone-400 hover:text-stone-600 rounded-lg hover:bg-stone-100 transition-all" title="Copiar link">
+                           <button onClick={() => copyLink(inv.id)} className="p-2 text-wedding-pearl hover:text-wedding-lila/70 rounded-lg hover:bg-wedding-pearl/20 transition-all" title="Copiar link">
                              <Copy className="w-4 h-4" />
                            </button>
-                           <button onClick={() => handleEditInit(inv)} className="p-2 text-stone-400 hover:text-amber-600 rounded-lg hover:bg-amber-50 transition-all" title="Editar invitado">
+                           <button onClick={() => handleEditInit(inv)} className="p-2 text-wedding-pearl hover:text-wedding-olive rounded-lg hover:bg-wedding-olive/10 transition-all" title="Editar invitado">
                              <Pencil className="w-4 h-4" />
                            </button>
-                           <button onClick={() => handleDelete(inv.id)} className="p-2 text-stone-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition-all" title="Eliminar">
+                           <button onClick={() => handleDelete(inv.id)} className="p-2 text-wedding-pearl hover:text-red-500 rounded-lg hover:bg-red-50 transition-all" title="Eliminar">
                             <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
@@ -655,25 +744,25 @@ const AdminPanel: React.FC = () => {
               </tbody>
             </table>
             {totalPages > 1 && (
-              <div className="px-5 py-4 border-t border-stone-100 bg-stone-50/50 flex flex-col sm:flex-row items-center justify-between gap-4">
-                <p className="text-xs text-stone-500 text-center sm:text-left">
+              <div className="px-5 py-4 border-t border-wedding-pearl/25 bg-wedding-cream/50 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <p className="text-xs text-wedding-lila/60 text-center sm:text-left">
                   Mostrando del {(currentPage - 1) * ITEMS_PER_PAGE + 1} al {Math.min(currentPage * ITEMS_PER_PAGE, filteredInvitados.length)} de {filteredInvitados.length} invitados
                 </p>
                 <div className="flex items-center gap-1">
                   <button 
                     onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
-                    className="p-1.5 rounded-lg border border-stone-200 text-stone-500 hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="p-1.5 rounded-lg border border-wedding-pearl/40 text-wedding-lila/60 hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </button>
-                  <span className="text-xs font-medium text-stone-600 px-3">
+                  <span className="text-xs font-medium text-wedding-lila/70 px-3">
                     Página {currentPage} de {totalPages}
                   </span>
                   <button 
                     onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                     disabled={currentPage === totalPages}
-                    className="p-1.5 rounded-lg border border-stone-200 text-stone-500 hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="p-1.5 rounded-lg border border-wedding-pearl/40 text-wedding-lila/60 hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     <ChevronRight className="w-4 h-4" />
                   </button>
@@ -687,33 +776,33 @@ const AdminPanel: React.FC = () => {
       {/* Modal Advertencia Reducción Pases */}
       {decreaseWarning && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-stone-900/60 backdrop-blur-sm" onClick={() => setDecreaseWarning(null)}></div>
+          <div className="absolute inset-0 bg-wedding-lila/60 backdrop-blur-sm" onClick={() => setDecreaseWarning(null)}></div>
           <div className="relative bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden text-center animate-fade-in-up">
-            <div className="bg-amber-50 p-6 flex justify-center">
-              <div className="w-16 h-16 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center">
+            <div className="bg-wedding-olive/10 p-6 flex justify-center">
+              <div className="w-16 h-16 bg-wedding-olive/15 text-wedding-olive rounded-full flex items-center justify-center">
                 <AlertTriangle className="w-8 h-8" />
               </div>
             </div>
             <div className="p-6">
-              <h3 className="text-xl font-serif text-stone-800 mb-2">Actualización de Pases</h3>
-              <p className="text-stone-600 mb-4">
+              <h3 className="text-xl font-serif text-wedding-lila mb-2">Actualización de Pases</h3>
+              <p className="text-wedding-lila/70 mb-4">
                 Parece que estás reduciendo los pases de <strong>{decreaseWarning.invToEdit.nombre}</strong> de {decreaseWarning.invToEdit.maxInvitados} a {decreaseWarning.newMax}.<br/><br/>
-                Como esta persona <strong className="text-amber-600 font-medium">ya había confirmado asistencia</strong> para {decreaseWarning.invToEdit.numInvitados} invitados,
+                Como esta persona <strong className="text-wedding-olive font-medium">ya había confirmado asistencia</strong> para {decreaseWarning.invToEdit.numInvitados} invitados,
               </p>
-              <div className="bg-stone-50 border border-stone-200 rounded-lg p-4 mb-6">
-                <p className="text-sm text-stone-600">Al guardar, su confirmación pasará a <strong>"Pendiente"</strong> para que pueda entrar nuevamente a su link y actualizar sus acompañantes.</p>
+              <div className="bg-wedding-cream border border-wedding-pearl/40 rounded-lg p-4 mb-6">
+                <p className="text-sm text-wedding-lila/70">Al guardar, su confirmación pasará a <strong>"Pendiente"</strong> para que pueda entrar nuevamente a su link y actualizar sus acompañantes.</p>
               </div>
               <div className="flex gap-3 mt-6">
                 <button 
                   onClick={() => setDecreaseWarning(null)}
-                  className="flex-1 px-4 py-3 bg-stone-100 text-stone-600 rounded-xl hover:bg-stone-200 transition-colors font-medium"
+                  className="flex-1 px-4 py-3 bg-wedding-pearl/20 text-wedding-lila/70 rounded-xl hover:bg-wedding-pearl/30 transition-colors font-medium"
                 >
                   Regresar
                 </button>
                 <button 
                   onClick={confirmDecreaseAndSave}
                   disabled={creating}
-                  className="flex-1 px-4 py-3 bg-amber-600 text-white rounded-xl hover:bg-amber-700 transition-colors font-medium flex justify-center"
+                  className="flex-1 px-4 py-3 bg-wedding-olive text-white rounded-xl hover:bg-wedding-olive/90 transition-colors font-medium flex justify-center"
                 >
                   {creating ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Entendido, guardar'}
                 </button>

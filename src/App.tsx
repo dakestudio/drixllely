@@ -15,14 +15,15 @@ const FinalMessage = React.lazy(() => import('@/components/sections/FinalMessage
 const AdminPanel = React.lazy(() => import('@/components/admin/AdminPanel'));
 
 /** Colores de fondo reales de cada sección — los divisores deben usarlos
- *  literalmente o se dibuja una banda de otro color entre secciones. */
-const DARK = '#381031';  // Hero y FinalMessage
-const CREAM = '#FCFBF5'; // Todas las secciones intermedias
+ *  literalmente o se dibuja una banda de otro color entre secciones.
+ *  Se leen del @theme de index.css, así la paleta no se duplica aquí. */
+const DARK = 'var(--color-wedding-lila)';  // Hero y FinalMessage
+const CREAM = 'var(--color-wedding-cream)'; // Todas las secciones intermedias
 
 /* El hero ocupa la pantalla completa mientras carga, así no hay salto
    de layout cuando aparece. */
 const HeroFallback = () => (
-  <div className="h-[100svh] w-full bg-[#381031]" aria-hidden="true" />
+  <div className="h-[100svh] w-full bg-wedding-lila" aria-hidden="true" />
 );
 
 const Wedding = () => (

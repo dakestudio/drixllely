@@ -10,6 +10,15 @@
   --color-wedding-olive: #536332;  /* Verde olivo — acentos y llamadas a la acción */
   --color-wedding-cream: #FCFBF5;  /* Blanco roto — fondo principal */
 
+  /* ── SOMBRAS ────────────────────────────────────────────
+     Derivadas de la paleta con color-mix, para que un cambio
+     de color arrastre también las sombras. Se usan como
+     `shadow-card`, `shadow-form`, etc.                      */
+  --shadow-card: 0 15px 35px -15px color-mix(in srgb, var(--color-wedding-lila) 12%, transparent);
+  --shadow-card-soft: 0 15px 30px -15px color-mix(in srgb, var(--color-wedding-lila) 8%, transparent);
+  --shadow-form: 0 20px 50px -20px color-mix(in srgb, var(--color-wedding-lila) 12%, transparent);
+  --shadow-olive: 0 10px 30px -10px color-mix(in srgb, var(--color-wedding-olive) 8%, transparent);
+
   /* Font Families */
   --font-serif: "Playfair Display", serif;
   --font-display: "Cinzel", serif;

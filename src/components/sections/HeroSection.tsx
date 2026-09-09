@@ -5,11 +5,8 @@ import { useIsDesktop } from '@/hooks';
 import { ArrowDown } from 'lucide-react';
 import fotoFondo from '@/assets/gallery/herofotodrixllely.webp';
 
-// --- PALETA OFICIAL DE LA BODA ---
-// Dark Lila: #381031
-// Gris Perla: #A8ABAE
-// Verde Olivo: #536332
-// Blanco: #FCFBF5
+// Paleta: usa los tokens wedding-lila / -pearl / -olive / -cream.
+// Se definen en el bloque @theme de src/index.css (fuente unica).
 
 // Relación de aspecto de la foto de portada. Reservar la caja antes de que el
 // archivo llegue evita el salto de layout (CLS) al cargar.
@@ -40,7 +37,7 @@ const HeroSection: React.FC = () => {
       /* 100svh en lugar de 100vh: en Safari iOS `vh` incluye la barra de
          direcciones, así que la flecha quedaba tapada y la sección saltaba
          al colapsarse la barra. */
-      className="relative h-[100svh] w-full overflow-hidden flex items-center justify-center bg-[#381031]"
+      className="relative h-[100svh] w-full overflow-hidden flex items-center justify-center bg-wedding-lila"
     >
       {/* Background Image with Parallax */}
       <motion.div className="absolute inset-0 z-0" style={{ y: bgY }}>
@@ -56,11 +53,11 @@ const HeroSection: React.FC = () => {
           decoding="async"
         />
         {/* Gradient overlay estilizado con Dark Lila */}
-        <div className="absolute inset-0 bg-gradient-to-b from-[#381031]/40 via-[#381031]/60 to-[#381031]/90" />
+        <div className="absolute inset-0 bg-gradient-to-b from-wedding-lila/40 via-wedding-lila/60 to-wedding-lila/90" />
       </motion.div>
 
       {/* Content with parallax */}
-      <motion.div className="relative z-10 text-center text-[#FCFBF5] px-4" style={{ y: textY, opacity }}>
+      <motion.div className="relative z-10 text-center text-wedding-cream px-4" style={{ y: textY, opacity }}>
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
@@ -70,7 +67,7 @@ const HeroSection: React.FC = () => {
             initial={{ opacity: 0, letterSpacing: '0.2em' }}
             animate={{ opacity: 1, letterSpacing: '0.5em' }}
             transition={{ duration: 2, delay: 0.3 }}
-            className="font-serif italic text-lg md:text-2xl mb-6 text-[#A8ABAE]"
+            className="font-serif italic text-lg md:text-2xl mb-6 text-wedding-pearl"
           >
             Nos Casamos
           </motion.p>
@@ -80,7 +77,7 @@ const HeroSection: React.FC = () => {
               initial={{ opacity: 0, x: -30 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 1, delay: 0.5 }}
-              className="text-[#FCFBF5]"
+              className="text-wedding-cream"
             >
               {COUPLE_NAMES.bride}
             </motion.span>
@@ -89,7 +86,7 @@ const HeroSection: React.FC = () => {
               initial={{ opacity: 0, scale: 0 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.8, delay: 1 }}
-              className="text-2xl sm:text-3xl md:text-5xl font-serif italic text-[#536332] align-middle mx-2 sm:mx-4 inline-block"
+              className="text-2xl sm:text-3xl md:text-5xl font-serif italic text-wedding-olive align-middle mx-2 sm:mx-4 inline-block"
             >
               &
             </motion.span>
@@ -98,7 +95,7 @@ const HeroSection: React.FC = () => {
               initial={{ opacity: 0, x: 30 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 1, delay: 0.5 }}
-              className="text-[#FCFBF5]"
+              className="text-wedding-cream"
             >
               {COUPLE_NAMES.groom}
             </motion.span>
@@ -108,14 +105,14 @@ const HeroSection: React.FC = () => {
             initial={{ width: 0 }}
             animate={{ width: '6rem' }}
             transition={{ duration: 1, delay: 1.2 }}
-            className="h-px bg-[#536332] mx-auto mb-6 opacity-80"
+            className="h-px bg-wedding-olive mx-auto mb-6 opacity-80"
           />
 
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 1, delay: 1.5 }}
-            className="font-sans text-base md:text-xl tracking-[0.3em] uppercase text-[#A8ABAE] font-light"
+            className="font-sans text-base md:text-xl tracking-[0.3em] uppercase text-wedding-pearl font-light"
           >
             {formattedDate}
           </motion.p>
@@ -124,12 +121,12 @@ const HeroSection: React.FC = () => {
 
       {/* Scroll Indicator — se detiene cuando el hero sale de pantalla */}
       <motion.div
-        className="absolute bottom-10 left-1/2 -translate-x-1/2 text-[#A8ABAE]/80"
+        className="absolute bottom-10 left-1/2 -translate-x-1/2 text-wedding-pearl/80"
         animate={isVisible ? { y: [0, 8, 0] } : { y: 0 }}
         transition={{ duration: 2, repeat: isVisible ? Infinity : 0, ease: "easeInOut" }}
         aria-hidden="true"
       >
-        <ArrowDown size={24} strokeWidth={1.5} className="text-[#536332]" />
+        <ArrowDown size={24} strokeWidth={1.5} className="text-wedding-olive" />
       </motion.div>
     </section>
   );

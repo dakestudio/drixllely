@@ -4,6 +4,7 @@ type DividerVariant = 'wave' | 'curve' | 'elegant';
 
 interface SectionDividerProps {
   variant?: DividerVariant;
+  /** Cualquier color CSS válido. Se espera `var(--color-wedding-*)`. */
   fillTop?: string;
   fillBottom?: string;
   flip?: boolean;
@@ -17,8 +18,8 @@ const paths: Record<DividerVariant, string> = {
 
 const SectionDivider: React.FC<SectionDividerProps> = ({
   variant = 'wave',
-  fillTop = '#FCFBF5',
-  fillBottom = '#FCFBF5',
+  fillTop = 'var(--color-wedding-cream)',
+  fillBottom = 'var(--color-wedding-cream)',
   flip = false,
 }) => {
   return (
@@ -33,10 +34,15 @@ const SectionDivider: React.FC<SectionDividerProps> = ({
         className="w-full h-[60px] md:h-[80px] lg:h-[100px]"
         fill="none"
       >
-        {/* Background fill - should match the TOP section color because the path draws the BOTTOM section color */}
-        <rect width="1920" height="192" fill={fillTop} />
-        {/* Wave shape - draws the bottom part, so it should be filled with the BOTTOM section color */}
-        <path d={paths[variant]} fill={fillBottom} />
+        {/*
+          El color va por `style` y no por el atributo `fill`: así acepta
+          `var(--color-wedding-*)` y la paleta sigue teniendo una sola fuente
+          de verdad en el bloque @theme de index.css.
+
+          El rectángulo pinta la sección DE ARRIBA; la curva, la de ABAJO.
+        */}
+        <rect width="1920" height="192" style={{ fill: fillTop }} />
+        <path d={paths[variant]} style={{ fill: fillBottom }} />
       </svg>
     </div>
   );
