@@ -102,8 +102,6 @@ invitación** (el que va en `?invite=XXXXXX`).
   asistira: null,                 // 'yes' | 'no'
   numInvitados: 0,                // Nunca puede superar maxInvitados
   nombresAcompanantes: [],
-  tieneRestricciones: null,
-  restricciones: "",
   mensaje: "",
   fechaConfirmacion: ""           // ISO, lo escribe la web al confirmar
 }

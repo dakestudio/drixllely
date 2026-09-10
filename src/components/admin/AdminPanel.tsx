@@ -189,8 +189,6 @@ const AdminPanel: React.FC = () => {
         asistira: null,
         numInvitados: 0,
         nombresAcompanantes: [],
-        tieneRestricciones: null,
-        restricciones: '',
         mensaje: '',
       });
       if (success) setToast('Invitado creado exitosamente');
@@ -217,8 +215,6 @@ const AdminPanel: React.FC = () => {
       asistira: null,
       numInvitados: 0,
       nombresAcompanantes: [],
-      tieneRestricciones: null,
-      restricciones: '',
       mensaje: ''
     };
     
@@ -310,7 +306,6 @@ const AdminPanel: React.FC = () => {
           { value: 'Pases asignados', ...cabecera },
           { value: 'Personas confirmadas', ...cabecera },
           { value: 'Acompañantes', ...cabecera },
-          { value: 'Restricciones alimenticias', ...cabecera },
           { value: 'Mensaje', ...cabecera },
           { value: 'Fecha de respuesta', ...cabecera },
         ],
@@ -322,7 +317,6 @@ const AdminPanel: React.FC = () => {
           { value: i.maxInvitados ?? 0, type: Number },
           { value: i.asistira === 'yes' ? i.numInvitados ?? 0 : 0, type: Number },
           { value: (i.nombresAcompanantes || []).join(', '), type: String },
-          { value: i.restricciones || '', type: String },
           { value: i.mensaje || '', type: String },
           // `undefined` y no `null`: la celda vacía no admite null cuando se
           // declara un `type`.
@@ -362,7 +356,6 @@ const AdminPanel: React.FC = () => {
           { width: 16 },  // Pases asignados
           { width: 20 },  // Personas confirmadas
           { width: 34 },  // Acompañantes
-          { width: 34 },  // Restricciones
           { width: 44 },  // Mensaje
           { width: 20 },  // Fecha
         ],
@@ -393,7 +386,7 @@ const AdminPanel: React.FC = () => {
     if (statusFilter === 'confirmed') result = result.filter(i => i.asistira === 'yes');
     else if (statusFilter === 'declined') result = result.filter(i => i.asistira === 'no');
     else if (statusFilter === 'pending') result = result.filter(i => !i.confirmado);
-    else if (statusFilter === 'attention') result = result.filter(i => i.mensaje || i.restricciones);
+    else if (statusFilter === 'attention') result = result.filter(i => i.mensaje);
 
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
@@ -437,16 +430,6 @@ const AdminPanel: React.FC = () => {
     return filteredInvitados.slice(start, start + ITEMS_PER_PAGE);
   }, [filteredInvitados, currentPage, ITEMS_PER_PAGE]);
 
-  /* Restricciones SOLO de quienes asisten: la alergia de alguien que no viene
-     es ruido para el salón. Esta es la lista que se le pasa al banquete. */
-  const restricciones = useMemo(
-    () =>
-      invitados
-        .filter(i => i.asistira === 'yes' && i.restricciones?.trim())
-        .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es')),
-    [invitados]
-  );
-
   /* Solo los invitados que dejaron mensaje, más recientes primero.
      No usa el filtro de la tabla: el muro se lee entero, siempre. */
   const mensajes = useMemo(
@@ -472,11 +455,6 @@ const AdminPanel: React.FC = () => {
 
   const avisos = (inv: Invitado) => (
     <>
-      {inv.restricciones && (
-        <span title="Tiene restricciones alimenticias" className="inline-flex">
-          <AlertTriangle className="w-3.5 h-3.5 text-amber-500" aria-label="Tiene restricciones alimenticias" />
-        </span>
-      )}
       {inv.mensaje && (
         <span title="Dejó un mensaje" className="inline-flex">
           <MessageSquare className="w-3.5 h-3.5 text-wedding-olive" aria-label="Dejó un mensaje" />
@@ -734,7 +712,7 @@ const AdminPanel: React.FC = () => {
               <option value="confirmed">Confirmados</option>
               <option value="pending">Pendientes</option>
               <option value="declined">No asisten</option>
-              <option value="attention">⚠️💬 Atención requerida</option>
+              <option value="attention">💬 Dejaron mensaje</option>
             </select>
           </div>
         </div>
@@ -811,9 +789,6 @@ const AdminPanel: React.FC = () => {
                   <div className="border-b border-wedding-pearl/25 pb-3"><span className="text-wedding-pearl block mb-2">Acompañantes</span>
                     <ul className="space-y-1">{selectedInvitado.nombresAcompanantes.map((n, i) => <li key={i} className="text-wedding-lila/80 flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-wedding-olive" />{n}</li>)}</ul>
                   </div>
-                )}
-                {selectedInvitado.restricciones && (
-                  <div className="border-b border-wedding-pearl/25 pb-3"><span className="text-wedding-pearl block mb-1">Restricciones</span><p className="text-wedding-lila/80">{selectedInvitado.restricciones}</p></div>
                 )}
                 {selectedInvitado.mensaje && (
                   <div className="border-b border-wedding-pearl/25 pb-3"><span className="text-wedding-pearl block mb-1">Mensaje</span><p className="text-wedding-lila/70 italic">"{selectedInvitado.mensaje}"</p></div>
@@ -1018,51 +993,6 @@ const AdminPanel: React.FC = () => {
             </div>
           </section>
         )}
-        {/* ── Restricciones alimenticias ────────────────────
-            Lista operativa: es la que se le entrega al salón. Por eso muestra
-            cuántas personas cubre cada invitación y se puede copiar entera. */}
-        {restricciones.length > 0 && (
-          <section className="mt-8">
-            <div className="flex flex-wrap items-center gap-3 mb-5">
-              <AlertTriangle className="w-4 h-4 text-amber-500" />
-              <h2 className="font-display text-lg text-wedding-lila">Restricciones alimenticias</h2>
-              <span className="text-xs text-wedding-pearl">
-                {restricciones.length} {restricciones.length === 1 ? 'invitación' : 'invitaciones'}
-                {' · '}
-                {restricciones.reduce((n, i) => n + (i.numInvitados || 0), 0)} personas
-              </span>
-              <button
-                onClick={() => {
-                  const texto = restricciones
-                    .map(i => `${i.nombre} (${i.numInvitados} pers.): ${i.restricciones}`)
-                    .join('\n');
-                  navigator.clipboard.writeText(texto).then(
-                    () => setToast('Lista copiada — lista para enviar al salón'),
-                    () => setToast('No se pudo copiar')
-                  );
-                }}
-                className="ml-auto flex items-center gap-2 px-4 py-2 border border-wedding-pearl/40 rounded-lg text-xs text-wedding-lila/70 hover:bg-white transition-all"
-              >
-                <Copy className="w-3.5 h-3.5" /> Copiar lista
-              </button>
-            </div>
-
-            <div className="bg-white border border-wedding-pearl/40 rounded-lg divide-y divide-wedding-pearl/25 shadow-sm">
-              {restricciones.map(inv => (
-                <div key={inv.id} className="p-5 flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-5">
-                  <div className="sm:w-56 shrink-0">
-                    <p className="text-sm font-medium text-wedding-lila">{inv.nombre}</p>
-                    <p className="text-[10px] uppercase tracking-widest text-wedding-pearl mt-0.5">
-                      {inv.numInvitados} {inv.numInvitados === 1 ? 'persona' : 'personas'}
-                    </p>
-                  </div>
-                  <p className="text-sm text-wedding-lila/80 leading-relaxed flex-1">{inv.restricciones}</p>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
       </main>
 
       {/* Modal Confirmar Eliminación */}

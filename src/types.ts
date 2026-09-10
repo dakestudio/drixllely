@@ -11,8 +11,6 @@ export interface RSVPData {
   asistira: 'yes' | 'no' | null;
   numInvitados: number;
   nombresAcompanantes: string[];
-  tieneRestricciones: boolean | null;
-  restricciones: string;
   mensaje: string;
 }
 
@@ -24,8 +22,6 @@ export interface Invitado {
   asistira: 'yes' | 'no' | null;
   numInvitados: number;
   nombresAcompanantes: string[];
-  tieneRestricciones: boolean | null;
-  restricciones: string;
   mensaje: string;
   fechaConfirmacion?: string;
 }

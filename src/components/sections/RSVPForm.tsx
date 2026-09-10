@@ -33,8 +33,6 @@ const RSVPForm: React.FC = () => {
     asistira: null,
     numInvitados: 0,
     nombresAcompanantes: [],
-    tieneRestricciones: null,
-    restricciones: '',
     mensaje: '',
   });
 
@@ -76,8 +74,6 @@ const RSVPForm: React.FC = () => {
         asistira: data.asistira || null,
         numInvitados: data.numInvitados || (data.maxInvitados === 1 ? 1 : 0),
         nombresAcompanantes: data.nombresAcompanantes || [],
-        tieneRestricciones: data.tieneRestricciones || null,
-        restricciones: data.restricciones || '',
         mensaje: data.mensaje || '',
       });
       setStatus('idle');
@@ -142,7 +138,6 @@ const RSVPForm: React.FC = () => {
         ...formData,
         nombresAcompanantes: formData.asistira === 'yes' ? formData.nombresAcompanantes : [],
         numInvitados: formData.asistira === 'yes' ? formData.numInvitados : 0,
-        restricciones: formData.tieneRestricciones ? formData.restricciones : '',
       });
     } catch {
       setStatus('network-error');
@@ -429,56 +424,6 @@ const RSVPForm: React.FC = () => {
                   )}
                 </AnimatePresence>
 
-                {/* Restricciones Alimenticias */}
-                <div className="flex flex-col">
-                  <label className="font-sans text-xs uppercase tracking-[0.2em] text-wedding-pearl mb-4">
-                    ¿Alguien tiene restricciones alimenticias o alergias? <span className="normal-case text-wedding-pearl/70">(opcional)</span>
-                  </label>
-                  <div className="flex gap-4">
-                    <button
-                      type="button"
-                      onClick={() => setFormData(prev => ({ ...prev, tieneRestricciones: false, restricciones: '' }))}
-                      className={`px-6 py-2 border transition-all text-xs tracking-widest uppercase rounded-full ${
-                        formData.tieneRestricciones === false
-                          ? 'bg-wedding-olive text-wedding-cream border-wedding-olive'
-                          : 'border-wedding-pearl/40 text-wedding-lila/70'
-                      }`}
-                    >
-                      No
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setFormData(prev => ({ ...prev, tieneRestricciones: true }))}
-                      className={`px-6 py-2 border transition-all text-xs tracking-widest uppercase rounded-full ${
-                        formData.tieneRestricciones === true
-                          ? 'bg-wedding-olive text-wedding-cream border-wedding-olive'
-                          : 'border-wedding-pearl/40 text-wedding-lila/70'
-                      }`}
-                    >
-                      Sí
-                    </button>
-                  </div>
-
-                  <AnimatePresence>
-                    {formData.tieneRestricciones && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.3 }}
-                        className="overflow-hidden mt-4"
-                      >
-                        <textarea
-                          value={formData.restricciones}
-                          onChange={(e) => setFormData(prev => ({ ...prev, restricciones: e.target.value }))}
-                          rows={2}
-                          className="w-full bg-transparent border-b border-wedding-pearl/50 py-2 focus:outline-none focus:border-wedding-olive font-serif text-lg text-wedding-lila resize-none"
-                          placeholder="Especifícanos (ej. vegetariano, alergia a mariscos, etc.)"
-                        />
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
               </motion.div>
             )}
           </AnimatePresence>
